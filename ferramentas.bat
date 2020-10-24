@@ -1,0 +1,1 @@
+python "C:\Users\Lucas\Desktop\BotDo\Ferramentas.py"
