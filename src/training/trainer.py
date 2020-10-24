@@ -1,20 +1,33 @@
+# Autoloader
+import sys
+import os
+from pathlib import Path
+path = Path(__file__).resolve()
+sys.path.append(str(path.parents[0]))
+
 # default imports
 import time
 from PIL import Image
 import os
 import PIL.ImageOps 
 from os import listdir
-from Search_TrainingMode import Search
 from tabulate import tabulate
 import shutil
 import re
 import numpy as np
+
+# Import system
+from Search_TrainingMode import Search
+
 
 class Trainer:
 
     def __init__(self):
         self.base_path = None
         self.get_dofus_base_content_path()
+        self.screens_folder_path = f'{self.folder_base_path}{os.sep}Screens'
+        self.output_folder_path = f'{self.folder_base_path}{os.sep}Output'
+        self.temp_folder_path = f'{self.folder_base_path}{os.sep}Temp'
     
     def set_train_type(self, train_type: str):
         self.train_type = train_type
@@ -50,6 +63,9 @@ class Trainer:
         path_array = path.split(os.sep)
         return path_array[-1].split('.')[0]
 
+    def filter_dir_list(self, dir_list:list):
+        return [output_path for output_path in dir_list if output_path != '.gitkeep']
+
     def run(
         self,
         pos_list: list,
@@ -59,11 +75,14 @@ class Trainer:
         saturation_tolerance: tuple=(0.02,0.12,0.02),
         bright_tolerance: tuple=(0.02,0.12,0.02)
     ):
-        img_list = self.get_train_image_list()
-        screen_list = os.listdir(f'{self.folder_base_path}{os.sep}Screens')
-        output_dir_list = os.listdir(f'{self.folder_base_path}{os.sep}Output') + os.listdir(f'{self.folder_base_path}{os.sep}Temp')
-        run_number = max([int(re.search(r'(\d+.?)',i)[0]) for i in output_dir_list]) + 1
-        os.makedirs(f'{self.folder_base_path}{os.sep}Temp{os.sep}run_{run_number}')
+        img_list = self.filter_dir_list(self.get_train_image_list())
+        screen_list = self.filter_dir_list(os.listdir(self.screens_folder_path))
+        output_dir_list = self.filter_dir_list(os.listdir(self.output_folder_path) + os.listdir(self.temp_folder_path))
+        if output_dir_list == []:
+            run_number = 0
+        else:    
+            run_number = max([int(re.search(r'(\d+.?)',i)[0]) for i in output_dir_list]) + 1
+        os.makedirs(f'{self.temp_folder_path}{os.sep}run_{run_number}')
         pos_list = pos_list
         match_min,match_max,match_step = match_tolerance
         color_min,color_max,color_step = color_tolerance
@@ -73,7 +92,7 @@ class Trainer:
         for img in img_list:
             for scr in screen_list:
                 image = Image.open(img)
-                screen = Image.open(f'{self.folder_base_path}{os.sep}Screens{os.sep}{scr}')
+                screen = Image.open(f'{self.screens_folder_path}{os.sep}{scr}')
                 # image = image.resize((23,23),Image.ANTIALIAS) #tumbnail optional
                 Table = []
                 match_count = match_min 
@@ -97,7 +116,7 @@ class Trainer:
                 text_file.write(tabulate(Table,tablefmt='plain')+'\n')
                 Table = []                           
                 text_file.close()
-        shutil.move(f".{os.sep}Temp{os.sep}run_{run_number}",f".{os.sep}Output") 
+        shutil.move(f'{self.temp_folder_path}{os.sep}run_{run_number}',self.output_folder_path) 
 
 if __name__ == '__main__':
     t = Trainer()
