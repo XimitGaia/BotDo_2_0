@@ -17,12 +17,14 @@ import re
 import numpy as np
 
 # Import system
-from Search_TrainingMode import Search
+from src.tools.search import Search
+from database.sqlite import Database
 
 
 class Trainer:
 
-    def __init__(self):
+    def __init__(self, database):
+        self.database: Database = database
         self.base_path = None
         self.get_dofus_base_content_path()
         self.screens_folder_path = f'{self.folder_base_path}{os.sep}Screens'
@@ -77,12 +79,6 @@ class Trainer:
     ):
         img_list = self.filter_dir_list(self.get_train_image_list())
         screen_list = self.filter_dir_list(os.listdir(self.screens_folder_path))
-        output_dir_list = self.filter_dir_list(os.listdir(self.output_folder_path) + os.listdir(self.temp_folder_path))
-        if output_dir_list == []:
-            run_number = 0
-        else:    
-            run_number = max([int(re.search(r'(\d+.?)',i)[0]) for i in output_dir_list]) + 1
-        os.makedirs(f'{self.temp_folder_path}{os.sep}run_{run_number}')
         pos_list = pos_list
         match_min,match_max,match_step = match_tolerance
         color_min,color_max,color_step = color_tolerance
@@ -91,6 +87,7 @@ class Trainer:
         bright_min,bright_max,bright_step = bright_tolerance
         for img in img_list:
             for scr in screen_list:
+                print(f"Processing \nimg: {img}\n on scr: {scr}")
                 image = Image.open(img)
                 screen = Image.open(f'{self.screens_folder_path}{os.sep}{scr}')
                 # image = image.resize((23,23),Image.ANTIALIAS) #tumbnail optional
@@ -105,21 +102,39 @@ class Trainer:
                             for l in np.arange(saturation_min,saturation_max + 0.01,saturation_step):
                                 bright_count = bright_min
                                 for m in np.arange(bright_min,bright_max + 0.01,bright_step):
-                                    total_matches,total_miss_matches,time = Search.search(image,screen,pos_list,match_tolerance=match_count,color_tolerance = color_count, validator_group_porcentage = group_count,saturation_tolerance = saturation_count, bright_tolerance = bright_count)
-                                    Table.append([round(match_count,3),round(color_count,3),round(group_count,3),round(saturation_count,3),round(bright_count,3),total_matches,total_miss_matches,time])
-                                    bright_count += bright_step
-                                saturation_count += saturation_step                      
+                                    match_list, time_total = Search.search(
+                                        image=image,
+                                        screen=screen,
+                                        match_tolerance=match_count,
+                                        color_tolerance=color_count,
+                                        validator_group_porcentage=group_count,
+                                        saturation_tolerance=saturation_count,
+                                        bright_tolerance=bright_count,
+                                        trainer=True
+                                    )
+                                    total_matches = len(set(pos_list) & set(match_list))
+                                    total_miss_matches = len(match_list) - total_matches
+                                    self.database.insert_training_results(row=(
+                                       f"{self.get_name_from_path(img)}_{self.get_name_from_path(scr)}",
+                                        round(match_count,3),
+                                        round(color_count,3),
+                                        round(group_count,3),
+                                        round(saturation_count,3),
+                                        round(bright_count,3),
+                                        total_matches,
+                                        total_miss_matches,
+                                        time_total
+                                    ))
+                                    bright_count += bright_step                   
+                                saturation_count += saturation_step 
                             group_count += group_step                    
                         color_count += color_step                    
-                    match_count += match_step
-                text_file = open(f".{os.sep}Temp{os.sep}run_{run_number}{os.sep}{self.get_name_from_path(img)}_{self.get_name_from_path(scr)}_.txt",'a')
-                text_file.write(tabulate(Table,tablefmt='plain')+'\n')
-                Table = []                           
-                text_file.close()
-        shutil.move(f'{self.temp_folder_path}{os.sep}run_{run_number}',self.output_folder_path) 
+                    match_count += match_step                          
 
 if __name__ == '__main__':
-    t = Trainer()
+    print('Initialize database module')
+    database = Database()
+    t = Trainer(database=database)
     t.set_train_type('res')
     print(t.get_train_image_list())
     t.run(pos_list=[])

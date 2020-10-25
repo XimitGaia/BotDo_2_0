@@ -6,6 +6,7 @@ import os
 import numpy as np
 import colorsys
 import typing
+import time
 
 class Search:
     
@@ -17,10 +18,15 @@ class Search:
         color_tolerance: float = 0.02, 
         validator_group_porcentage: float = 0.05,
         saturation_tolerance: float = 0.05,
-        bright_tolerance: float = 0.07
+        bright_tolerance: float = 0.07,
+        trainer: bool = False
+
     )-> list:#screen = (x1,y1,x2,y2) rectangle top left, button right, all others parameters variate between 0 and 1
+        if trainer == True:
+            start_time = time.time()
         img = image
-        screen = ImageGrab.grab(screen)#grab the screen ('' is fullscreen) or (x1,y1,x2,y2)
+        if trainer == False:
+            screen = ImageGrab.grab(screen)#grab the screen ('' is fullscreen) or (x1,y1,x2,y2)
         #screen = Image.open("C:\\Users\\Lucas\\Desktop\\BotDo\\Training\\Screens\\screen_2.png")
         img_HSV = img.convert('HSV')#convert img to HSV
         screen_HSV = screen.convert('HSV')# convert screen to HSV
@@ -69,6 +75,9 @@ class Search:
                                 break
                     if match:
                         total_matches.append((x,y))
+        if trainer == True:
+            total_time = float(time.time() - start_time)
+            return total_matches, total_time
         return total_matches    
 
 
