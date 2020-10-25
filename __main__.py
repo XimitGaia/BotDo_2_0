@@ -22,7 +22,7 @@ while True:
     | | | | | | | |_  | | | \___ \  |  _ \| | | || |  
     | |_| | |_| |  _| | |_| |___) | | |_) | |_| || |  
     |____/ \___/|_|    \___/|____/  |____/ \___/ |_|  
-    By Lucas Sievers
+        By Lucas Sievers
     """
     )
     print('SELECT ONE OF THE OPTIONS')
