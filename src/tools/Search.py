@@ -19,15 +19,18 @@ class Search:
         validator_group_porcentage: float = 0.05,
         saturation_tolerance: float = 0.05,
         bright_tolerance: float = 0.07,
-        trainer: bool = False
+        trainer: bool = False,
+        resize: tuple = (0,0)
 
     )-> list:#screen = (x1,y1,x2,y2) rectangle top left, button right, all others parameters variate between 0 and 1
         if trainer == True:
             start_time = time.time()
-        img = image
         if trainer == False:
             screen = ImageGrab.grab(screen)#grab the screen ('' is fullscreen) or (x1,y1,x2,y2)
         #screen = Image.open("C:\\Users\\Lucas\\Desktop\\BotDo\\Training\\Screens\\screen_2.png")
+        img = image
+        if resize != (0,0):#check if image needs to be resized, and resize if needed
+            img.thumbnail(resize, Image.ANTIALIAS)
         img_HSV = img.convert('HSV')#convert img to HSV
         screen_HSV = screen.convert('HSV')# convert screen to HSV
         total_matches = [] #list of total matches
@@ -60,8 +63,8 @@ class Search:
                             break
                 if validated:#if validated, start to try a match on the whole screen
                     match_error = 0
+                    match = True
                     for pos in rest_group:
-                        match = True
                         if not Search._check_color_renge(
                             pixel_1_HSV=img_HSV.getpixel(pos),
                             pixel_2_HSV=screen_HSV.getpixel((x+pos[0],y+pos[1])),
@@ -135,11 +138,14 @@ class Search:
 
 if __name__ == '__main__':
     import keyboard
-    img = Image.open("C:\\Users\\Lucas\\Desktop\\BotDo\\testes\\testes_anteriores\\ttt2.png")
-    #img.thumbnail((24,24), Image.ANTIALIAS)
+    img = Image.open("C:\\Users\\Lucas\\Desktop\\resist_test\\01.png")
+    img.thumbnail((5,5), Image.ANTIALIAS)
     while True:
         if keyboard.is_pressed('control+alt'):
             print('Started')
             break
     #print(img.size)
-    print(Search.search(image=img))
+    print(Search.search(image=img,screen=(0,608,1365,767)))
+
+
+
