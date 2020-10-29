@@ -24,8 +24,8 @@ class Screen:
         self.markers_path = f'{self.base_local_path}{os.sep}screen_markers{os.sep}'
         self.fight_regions = None
         self.get_fight_markers_regions()
-        print(self.fight_regions['hp_ap_mp_region'])
-        print(self.text_table_on_screen(table_region=self.fight_regions['hp_ap_mp_region']))
+        print(self.text_hp_ap_mp_list_on_screen(table_region=(self.fight_regions['hp_ap_mp_region'])))
+        print(self.text_res_table_on_screen(table_region=self.fight_regions['res_region']))
         if mode == 'battle':
             print(time.time())
             self.markers_path = f'{self.base_local_path}{os.sep}screen_markers{os.sep}'
@@ -55,13 +55,18 @@ class Screen:
         if len(matches) <= 1:
             print('Marker not found')
             return None
-        marked_area = (matches[0][0],matches[0][1],matches[-1][0],matches[-1][1])
+        marked_area = (
+            matches[0][0],
+            matches[0][1],
+            matches[-1][0],
+            matches[-1][1]
+        )
         if screen != '':
             marked_area = (
                 marked_area[0]+screen[0],
                 marked_area[1]+screen[1],
                 marked_area[2]+screen[0], 
-                marked_area[3]+screen[1]
+                marked_area[3]+screen[1] 
             )
         return marked_area
     
@@ -91,8 +96,13 @@ class Screen:
             round(high)
         )
 
-    def text_table_on_screen(self,table_region:tuple):
+    def text_res_table_on_screen(self,table_region:tuple):
         region_image = ImageGrab.grab(table_region)
-        return pytesseract.image_to_string(region_image,config='--psm 4 --oem 3 -c tessedit_char_whitelist=-%/0123456789')
+        return pytesseract.image_to_string(region_image,config='--psm 4 -c tessedit_char_whitelist=-%0123456789')
+
+    def text_hp_ap_mp_list_on_screen(self,list_region:tuple):
+        region_image = ImageGrab.grab(list_region)
+        return pytesseract.image_to_string(region_image,config='--psm 6 -c tessedit_char_whitelist=-/0123456789')
+
 
 s = Screen()
