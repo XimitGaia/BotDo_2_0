@@ -20,25 +20,19 @@ class Screen:
         self.get_screen_size()
         self.game_active_screen = None
         self.get_game_active_screen()
+        #teste
         self.markers_path = f'{self.base_local_path}{os.sep}screen_markers{os.sep}'
         self.fight_regions = None
         self.get_fight_markers_regions()
-        print(self.fight_regions)
+        print(self.fight_regions['hp_ap_mp_region'])
+        print(self.text_table_on_screen(table_region=self.fight_regions['hp_ap_mp_region']))
         if mode == 'battle':
             print(time.time())
             self.markers_path = f'{self.base_local_path}{os.sep}screen_markers{os.sep}'
             self.fight_regions = None
-            
-            
             print(time.time())
-
         if mode == 'login':
             seila = None
-            print(seila)
-        #########
-
-        self.get_game_active_screen()
-        self.get_fight_markers_regions()
 
 
     def get_screen_size(self):
@@ -74,14 +68,14 @@ class Screen:
     
     def get_fight_markers_regions(self):
         search_region = (0,
-        0.65*self.screen_size[1],
+        round(0.65*self.screen_size[1]),
         self.screen_size[0],
         self.screen_size[1]
         )
         self.fight_regions = {
-            'res_region': self.get_marked_area(marker='res_marker',screen=search_region)),
-            'name_region': self.get_marked_area(marker='name_marker',screen=search_region)),
-            'hp_ap_mp_region': self.get_marked_area(marker='hp_ap_mp_marker',screen=search_region))
+            'res_region': self.get_marked_area(marker='res_marker',screen=search_region),
+            'name_region': self.get_marked_area(marker='name_marker',screen=search_region),
+            'hp_ap_mp_region': self.get_marked_area(marker='hp_ap_mp_marker',screen=search_region)
         }
 
     def get_game_active_screen(self):#(x1,y1,x2,y2)
@@ -96,5 +90,9 @@ class Screen:
             round(X + width),
             round(high)
         )
+
+    def text_table_on_screen(self,table_region:tuple):
+        region_image = ImageGrab.grab(table_region)
+        return pytesseract.image_to_string(region_image,config='--psm 4 --oem 3 -c tessedit_char_whitelist=-%/0123456789')
 
 s = Screen()
