@@ -23,11 +23,12 @@ class Search:
         resize: tuple = (0,0)
 
     )-> list:#screen = (x1,y1,x2,y2) rectangle top left, button right, all others parameters variate between 0 and 1
-        if trainer == True:
+        if trainer:
             start_time = time.time()
-        if trainer == False:
+        if type(screen) == tuple or screen == '':  
             screen = ImageGrab.grab(screen)#grab the screen ('' is fullscreen) or (x1,y1,x2,y2)
-        #screen = Image.open("C:\\Users\\Lucas\\Desktop\\BotDo\\Training\\Screens\\screen_2.png")
+        else:
+            screen = screen
         img = image
         if resize != (0,0):#check if image needs to be resized, and resize if needed
             img.thumbnail(resize, Image.ANTIALIAS)
@@ -138,14 +139,14 @@ class Search:
 
 if __name__ == '__main__':
     import keyboard
-    img = Image.open("C:\\Users\\Lucas\\Desktop\\resist_test\\01.png")
-    img.thumbnail((5,5), Image.ANTIALIAS)
+    img = Image.open("C:\\Users\\Lucas\\Desktop\\teste.png")
+    #img.thumbnail((5,5), Image.ANTIALIAS)
     while True:
         if keyboard.is_pressed('control+alt'):
             print('Started')
             break
     #print(img.size)
-    print(Search.search(image=img,screen=(0,608,1365,767)))
+    print(Search.search(image=img))
 
 
 

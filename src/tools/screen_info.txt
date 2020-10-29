@@ -1,0 +1,12 @@
+Monitor Lipe = 1920x1080
+Tela Jogo = 1354x1080
+
+
+Monitor Lucas= 1366x768
+Tela Jogo = 966x768
+
+
+proporcao tela jogo(W/H): 1.255
+
+proporcao monitor tela jogo(Wjogo / Wmonitor): 0.704
+
