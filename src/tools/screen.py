@@ -27,7 +27,7 @@ class Screen:
             self.screen_size[1]
             )
         self.chat_input = None
-        #self.get_chat_input()
+        self.get_chat_input()
         if mode == 'battle':
             self.team = None
             self.cells = []
@@ -35,6 +35,7 @@ class Screen:
             self.holes = []
             self.others = []
             self.start_positions = []
+            self.get_battle_map_info()
         if mode == 'login':
             seila = None
 
@@ -189,10 +190,21 @@ class Screen:
         translation_y = self.game_active_screen[1]
         return (round(self.x_range_white[xcoord]+translation_x),round(self.y_range[ycoord]+translation_y))
 
+    def get_changes_in_cells(self):
+        screen = ImageGrab.grab('')
+        teste = []
+        for cell in self.cells:
+            point = self.map_to_screen(cell)
+            if screen.getpixel(point) != (142, 134, 94) and screen.getpixel(point) != (150, 142, 103):
+                teste.append(cell)
+                pyautogui.moveTo(point)
+        print(cell)
 ###################################
 
 
 ad = time.time()
 s = Screen(mode='battle')
-s.get_chat_input()
 print(time.time()-ad)
+input('aaa')
+time.sleep(2)
+s.get_changes_in_cells()
