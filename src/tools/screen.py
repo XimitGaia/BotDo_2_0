@@ -62,7 +62,7 @@ class Screen:
                 posto +=1
         return match_list
     
-    def get_marked_area(
+    def get_marked_area_or_points(
         self,
         marker_number:int,
         screen = '',
@@ -118,7 +118,7 @@ class Screen:
         )
 
     def get_chat_input(self):
-        region = self.get_marked_area(screen=self.bottom_region,marker_number=2,marker='chat_input_marker')
+        region = self.get_marked_area_or_points(screen=self.bottom_region,marker_number=2,marker='chat_input_marker')
         central_point = ((region[0]+region[2])/2 , (region[1]+region[3])/2)
         self.chat_input = central_point
         
@@ -127,14 +127,39 @@ class Screen:
     def get_timeline_region(self):
         self.timeline_region = (self.game_active_screen[2],0,self.screen_size[0],self.screen_size[1])
 
-    def seila(self):
-        for i in self.get_marked_area(marker_number=1,screen=self.timeline_region,marker='timeline_marker'):
-            pyautogui.moveTo(i)
+    def get_timeline_marker(self,marker:str):
+        non_filtred_markers = self.get_marked_area_or_points(marker_number=1,screen=self.timeline_region,marker= marker)
+        filtred_markers = [position for position in non_filtred_markers if non_filtred_markers[0][0] == position[0] or abs(non_filtred_markers[0][0]-position[0]) > 5]
+        filtred_markers.sort(key=lambda tup: tup[1])
+        return filtred_markers
+
+        
+    
+    def get_timeline_changed_position(self):
+        positions_enemy = self.get_timeline_marker(marker='timeline_enemy_marker')
+        positions_ally = self.get_timeline_marker(marker='timeline_ally_marker')
+        max_position_enemy = max(positions_enemy,key=lambda tup: tup[0])
+        max_position_ally = max(positions_ally,key=lambda tup: tup[0])
+        if max_position_enemy[0] != min(positions_enemy,key=lambda tup: tup[0])[0]:
+            return positions_enemy.index(max_position_enemy),'enemy'
+
+        if max_position_ally[0] != min(positions_ally,key=lambda tup: tup[0])[0]:
+            return positions_ally.index(max_position_ally),'ally'
+
+        if max_position_enemy[0] == max_position_ally[0]:
+            return 'invocation'
+
+        if max_position_enemy[0] > max_position_ally[0]:
+            return positions_enemy.index(max_position_enemy),'enemy'
+            
+        return positions_ally.index(max_position_ally),'ally'
+
+
     def get_fight_markers_regions(self)->dict:
             return {
-                'res_region': self.get_marked_area(marker='res_marker',screen=self.bottom_region),
-                'name_region': self.get_marked_area(marker='name_marker',screen=self.bottom_region),
-                'hp_ap_mp_region': self.get_marked_area(marker='hp_ap_mp_marker',screen=self.bottom_region)
+                'res_region': self.get_marked_area_or_points(marker='res_marker',screen=self.bottom_region),
+                'name_region': self.get_marked_area_or_points(marker='name_marker',screen=self.bottom_region),
+                'hp_ap_mp_region': self.get_marked_area_or_points(marker='hp_ap_mp_marker',screen=self.bottom_region)
             }
 
     def text_res_table_on_screen(self,table_region:tuple)->str:
@@ -237,7 +262,5 @@ class Screen:
 
 ad = time.time()
 s = Screen(mode='battle')
+print(s.get_timeline_changed_position())
 print(time.time()-ad)
-#input('aaa')
-time.sleep(2)
-s.seila()
