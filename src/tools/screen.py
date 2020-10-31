@@ -30,12 +30,15 @@ class Screen:
         self.get_chat_input()
         if mode == 'battle':
             self.team = None
+            self.timeline_region = None
+            self.fight_markers_regions = None
             self.cells = []
             self.walls = []
             self.holes = []
-            self.others = []
             self.start_positions = []
+            self.get_timeline_region()
             self.get_battle_map_info()
+
         if mode == 'login':
             seila = None
 
@@ -43,23 +46,48 @@ class Screen:
     def get_screen_size(self):
         self.screen_size = ImageGrab.grab('').size
 
-    def get_marked_area(self, 
-    marker: str = '',
-    screen = ''
+    def filter_markers_points(
+        self,
+        marker_size:tuple,
+        match_list:list
+    ):
+        if len(match_list) == 0:
+            return match_list
+        posto = 0
+        match_list = match_list
+        for match in match_list[1:]:
+            if abs(match_list[posto][0] - match[0]) < marker_size[0] and abs(match_list[posto][1] - match[1]) < marker_size[1]:
+                match_list.remove(match)
+            else:
+                posto +=1
+        return match_list
+    
+    def get_marked_area(
+        self,
+        marker_number:int,
+        screen = '',
+        marker:str = ''
     )->tuple:
         marker = Image.open(f'{self.markers_path}{marker}.png')
         screen = screen
-        matches = Search.search(
-            image=marker,
-            screen=screen,
-            match_tolerance=0.01,
-            validator_group_porcentage=1,
-            saturation_tolerance=0.01,
-            bright_tolerance=0.01,          
+        matches = self.filter_markers_points(
+            marker_size=marker.size,
+            match_list=Search.search(
+                image=marker,
+                screen=screen,
+                match_tolerance=0.01,
+                validator_group_porcentage=1,
+                saturation_tolerance=0.01,
+                bright_tolerance=0.01,          
+            )
         )
-        if len(matches) <= 1:
+        if len(matches) <= 1 and marker_number == 2:
             print('Marker not found')
             return None
+        if marker_number == 1:
+            if screen != '':
+                return [(screen[0]+match[0],screen[1]+match[1]) for match in matches]
+            return matches
         marked_area = (
             matches[0][0],
             matches[0][1],
@@ -75,6 +103,7 @@ class Screen:
             )
         return marked_area
     
+
     def get_game_active_screen(self):#(x1,y1,x2,y2)
         screen_proportion = 0.704
         action_screen_proportion = 0.709
@@ -89,13 +118,18 @@ class Screen:
         )
 
     def get_chat_input(self):
-        region = self.get_marked_area(screen=self.bottom_region,marker='chat_input_marker')
+        region = self.get_marked_area(screen=self.bottom_region,marker_number=2,marker='chat_input_marker')
         central_point = ((region[0]+region[2])/2 , (region[1]+region[3])/2)
         self.chat_input = central_point
         
 ##################################################################################################
 #####################battle mode#############################################################
+    def get_timeline_region(self):
+        self.timeline_region = (self.game_active_screen[2],0,self.screen_size[0],self.screen_size[1])
 
+    def seila(self):
+        for i in self.get_marked_area(marker_number=1,screen=self.timeline_region,marker='timeline_marker'):
+            pyautogui.moveTo(i)
     def get_fight_markers_regions(self)->dict:
             return {
                 'res_region': self.get_marked_area(marker='res_marker',screen=self.bottom_region),
@@ -125,7 +159,6 @@ class Screen:
         return comparation_group
 
     def define_and_append_cell_group(self,position_number:int,pixels: list):
-        a = 0
         if pixels[1:] == pixels[:-1]:# if all pixels are equal
             if pixels[0] == [142, 134, 94] or pixels[0] == [150, 142, 103]:
                 self.cells.append(position_number)
@@ -145,7 +178,6 @@ class Screen:
                 self.cells.append(position_number)
         else:
             self.cells.append(position_number)
-            #self.others.append(position_number)
 
     def get_battle_map_info(self):
         step_x = self.get_action_screen_x_step()
@@ -188,23 +220,24 @@ class Screen:
         xcoord = cell_number - (ycoord*14)
         translation_x = self.game_active_screen[0]
         translation_y = self.game_active_screen[1]
+        if ycoord%2 == 0:
+            return (round(self.x_range_black[xcoord]+translation_x),round(self.y_range[ycoord]+translation_y))
         return (round(self.x_range_white[xcoord]+translation_x),round(self.y_range[ycoord]+translation_y))
 
-    def get_changes_in_cells(self):
+    def get_occupied_cells(self):
         screen = ImageGrab.grab('')
-        teste = []
+        occupied_cells = []
         for cell in self.cells:
             point = self.map_to_screen(cell)
             if screen.getpixel(point) != (142, 134, 94) and screen.getpixel(point) != (150, 142, 103):
-                teste.append(cell)
-                pyautogui.moveTo(point)
-        print(cell)
+                occupied_cells.append(cell)
+        return occupied_cells
 ###################################
 
 
 ad = time.time()
 s = Screen(mode='battle')
 print(time.time()-ad)
-input('aaa')
+#input('aaa')
 time.sleep(2)
-s.get_changes_in_cells()
+s.seila()
