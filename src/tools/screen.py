@@ -122,8 +122,18 @@ class Screen:
         central_point = ((region[0]+region[2])/2 , (region[1]+region[3])/2)
         self.chat_input = central_point
         
+
+###################################################################################################
+#  ________  ________  _________  _________  ___       _______           _____ ______   ________  ________  _______      
+# |\   __  \|\   __  \|\___   ___\\___   ___\\  \     |\  ___ \         |\   _ \  _   \|\   __  \|\   ___ \|\  ___ \     
+# \ \  \|\ /\ \  \|\  \|___ \  \_\|___ \  \_\ \  \    \ \   __/|        \ \  \\\__\ \  \ \  \|\  \ \  \_|\ \ \   __/|    
+#  \ \   __  \ \   __  \   \ \  \     \ \  \ \ \  \    \ \  \_|/__       \ \  \\|__| \  \ \  \\\  \ \  \ \\ \ \  \_|/__  
+#   \ \  \|\  \ \  \ \  \   \ \  \     \ \  \ \ \  \____\ \  \_|\ \       \ \  \    \ \  \ \  \\\  \ \  \_\\ \ \  \_|\ \ 
+#    \ \_______\ \__\ \__\   \ \__\     \ \__\ \ \_______\ \_______\       \ \__\    \ \__\ \_______\ \_______\ \_______\
+#     \|_______|\|__|\|__|    \|__|      \|__|  \|_______|\|_______|        \|__|     \|__|\|_______|\|_______|\|_______|
 ##################################################################################################
-#####################battle mode#############################################################
+
+                                                                                                                        
     def get_timeline_region(self):
         self.timeline_region = (self.game_active_screen[2],0,self.screen_size[0],self.screen_size[1])
 
@@ -133,26 +143,19 @@ class Screen:
         filtred_markers.sort(key=lambda tup: tup[1])
         return filtred_markers
 
-        
     
     def get_timeline_changed_position(self):
-        positions_enemy = self.get_timeline_marker(marker='timeline_enemy_marker')
-        positions_ally = self.get_timeline_marker(marker='timeline_ally_marker')
-        max_position_enemy = max(positions_enemy,key=lambda tup: tup[0])
-        max_position_ally = max(positions_ally,key=lambda tup: tup[0])
-        if max_position_enemy[0] != min(positions_enemy,key=lambda tup: tup[0])[0]:
-            return positions_enemy.index(max_position_enemy),'enemy'
-
-        if max_position_ally[0] != min(positions_ally,key=lambda tup: tup[0])[0]:
-            return positions_ally.index(max_position_ally),'ally'
-
-        if max_position_enemy[0] == max_position_ally[0]:
+        positions_blue = self.get_timeline_marker(marker='timeline_enemy_marker')
+        positions_red = self.get_timeline_marker(marker='timeline_ally_marker')
+        all_positions = positions_blue + positions_red
+        all_positions.sort(key=lambda tup: tup[1])
+        max_position = max(all_positions,key=lambda tup: tup[0])
+        if max_position[0] == min(all_positions,key=lambda tup: tup[0])[0]:
             return 'invocation'
+        elif max_position in positions_blue:
+            return all_positions.index(max_position),'blue'
+        return all_positions.index(max_position), 'red'
 
-        if max_position_enemy[0] > max_position_ally[0]:
-            return positions_enemy.index(max_position_enemy),'enemy'
-            
-        return positions_ally.index(max_position_ally),'ally'
 
 
     def get_fight_markers_regions(self)->dict:
