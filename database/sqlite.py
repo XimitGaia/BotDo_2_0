@@ -55,7 +55,7 @@ class Database:
                 'sql':  """
                     CREATE TABLE *table*(
                         id integer PRIMARY KEY AUTOINCREMENT,
-                        job_name TEXT,
+                        job_name TEXT UNIQUE,
                         job_type integer,
                         FOREIGN KEY(job_type) REFERENCES job_type(id)
                     );
@@ -103,6 +103,26 @@ class Database:
                 """,
                 'with_index': False
             },
+            'monsters': {
+                'temp': False,
+                'sql': """
+                CREATE TABLE *table*(
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    monster_id INTEGER,
+                    monster_name TEXT,
+                    level INTEGER,
+                    lifePoints INTEGER,
+                    actionPoints INTEGER,
+                    movementPoints INTEGER,
+                    earthResistance INTEGER,
+                    airResistance INTEGER,
+                    fireResistance  INTEGER,
+                    waterResistance INTEGER,
+                    neutralResistance INTEGER
+                )
+                """,
+                'with_index': False
+            }
         }
         for table in tables:
             tables_to_create = [table]
@@ -132,37 +152,44 @@ class Database:
     # ########### ###    ####  ########  ########## ###    ###    ###     ########       
          
  
-    def insert_world_list_zone(self, row: tuple)-> str:
+    def insert_world_list_zone(self, row: tuple):
         cursor = self.connection.cursor()
         cursor.execute("""insert OR IGNORE into world_list_zone(zone_name) values(?);""", row)
         self.connection.commit()    
  
-    def insert_job_type(self, row: tuple)-> str:
+    def insert_job_type(self, row: tuple):
         cursor = self.connection.cursor()
         cursor.execute("""INSERT OR IGNORE INTO job_type(job_type) VALUES (?);""", row)
         self.connection.commit()
     
-    def insert_jobs(self, row: tuple)-> str:
+    def insert_jobs(self, row: tuple):
         cursor = self.connection.cursor()
         cursor.execute("""INSERT OR IGNORE INTO jobs(job_name, job_type) VALUES (?, ?);""" , row)
         self.connection.commit()
     
-    def insert_images(self, row: tuple)-> str:
+    def insert_images(self, row: tuple):
         cursor = self.connection.cursor()
         cursor.execute("""insert OR IGNORE into images(path_from_root) values(?);""" , row)
         self.connection.commit()
 
-    def insert_job_resources_list(self, row: tuple)-> str:
+    def insert_job_resources_list(self, row: tuple):
         cursor = self.connection.cursor()
         cursor.execute("""INSERT OR IGNORE INTO job_resources_list(resources_name, resources_level, job_id, images_id) VALUES (?, ?, ?, ?);""", row)
         self.connection.commit()
     
-    def insert_job_resources_location(self, row: tuple)-> str:
+    def insert_job_resources_location(self, row: tuple):
         cursor = self.connection.cursor()
         cursor.execute("""insert OR IGNORE into job_resources_location (x, y, resources_id, resources_quantity, world_list_zone_id) values(?, ?, ?, ?, ?);""" , row)
         self.connection.commit()
 
-    #    :::     :::     :::     :::       :::    ::: :::::::::: :::::::: 
+    def insert_monsters(self, row: tuple):
+        cursosr = self.connection.cursor()
+        cursosr.execute("""INSERT OR IGNORE INTO monsters(monster_id,monster_name,level, lifePoints, actionPoints, movementPoints, earthResistance, airResistance, fireResistance , waterResistance, neutralResistance) values(?,?,?,?,?,?,?,?,?,?,?)""",row)
+        self.connection.commit()
+    
+    
+    
+    
     #   :+:     :+:   :+: :+:   :+:       :+:    :+: :+:       :+:    :+: 
     #  +:+     +:+  +:+   +:+  +:+       +:+    +:+ +:+       +:+         
     # +#+     +:+ +#++:++#++: +#+       +#+    +:+ +#++:++#  +#++:++#++   
@@ -301,6 +328,66 @@ class Database:
             ('Limpet', 200, 5, 1),
         ]
         self.insert_values_executor(callback=self.insert_job_resources_list, values_list=values_list)
+
+
+
+ 
+#        ::::::::   :::    ::: :::::::::: :::    ::: :::::::::: :::::::: 
+#      :+:    :+:  :+:    :+: :+:        :+:    :+: :+:       :+:    :+: 
+#     +:+    +:+  +:+    +:+ +:+        +:+    +:+ +:+       +:+         
+#    +#+    +:+  +#+    +:+ +#++:++#   +#+    +:+ +#++:++#  +#++:++#++   
+#   +#+    +#+  +#+    +#+ +#+        +#+    +#+ +#+              +#+    
+#  #+#    #+#  #+#    #+# #+#        #+#    #+# #+#       #+#    #+#     
+#  ########### ########  ##########  ########  ########## ########       
+    
+    def query(self, sql: str):
+        """
+        Query all rows in the tasks table
+        :param conn: the Connection object
+        :return:
+        """
+        cursor = self.connection.cursor()
+        cursor.execute(sql)
+
+        rows = cursor.fetchall()
+        return rows
+    
+    def get_resource_by_name_or_id(self, name_or_id)-> dict:
+        sql = ""
+        if name_or_id.isdigit():
+            sql = f"""
+                SELECT * FROM job_resources_list 
+                WHERE id = {name_or_id}
+            """
+        elif type(name_or_id) is str:
+            sql = f"""
+                SELECT * FROM job_resources_list 
+                WHERE resources_name like '%{name_or_id}%'
+            """
+        if sql == '':
+            return {}
+        return self.query(sql)
+
+    def get_jobs(self):
+        sql = f"""
+            SELECT * FROM jobs
+        """
+        return self.query(sql)
+
+    def get_resources_by_job_id(self, job_id):
+        sql = f"""
+            SELECT * FROM job_resources_list 
+            WHERE job_id = {job_id}
+        """
+        return self.query(sql)
+
+    def get_resources_location(self, job_resources_id_list: list):
+        id_list_sql = ", ".join(job_resources_id_list)
+        sql = f"""
+            SELECT * FROM job_resources_location
+            WHERE resources_id in  ({id_list_sql})
+        """
+        return self.query(sql)
 
 if __name__ == '__main__':
     database = Database()

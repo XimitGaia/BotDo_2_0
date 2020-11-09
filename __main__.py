@@ -6,13 +6,16 @@ path = Path(__file__).resolve()
 sys.path.append(str(path.parents[0]))
 
 # Import system
-from src.training.trainer import Trainer
+from src.tools.replace_files import replace_files
 from database.sqlite import Database
+from src.goals.resource import Resource
 
 print('Initialize database module')
 database = Database()
-print('Initialize treiner module')
-trainer = Trainer(database=database)
+print('Changing files')
+replace_files()
+
+
 
 while True: 
     os.system('cls' if os.name == 'nt' else 'clear')
@@ -26,15 +29,14 @@ while True:
     """
     )
     print('SELECT ONE OF THE OPTIONS')
-    print('1  - Trainer')
+    print('1  - Drop')
+    print('2  - Resources')
     print('-1 - Exit')
     option = int(input("Select what you want: "))
-    if option == 1:
-        trainer.set_train_type('res')
-        print(trainer.get_train_image_list())
-        trainer.run(pos_list=[])
-        database.connection.close()
-        
+    if option == 2: # drops options
+        resource = Resource(database)
+            
+
 
     elif option == -1:
         break

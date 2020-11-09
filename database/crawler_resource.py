@@ -68,8 +68,8 @@ def generate_positions_from_registers(registers: list)-> list:
                     })
     return positions
 
+database = Database()
 for type_id in internal_type_id:
     rows = get_position_by_resource_id(type_id, internal_type_id)
-    database = Database()
     for row in rows:
         database.insert_job_resources_location(row=row)
