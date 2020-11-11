@@ -122,6 +122,21 @@ class Database:
                 )
                 """,
                 'with_index': False
+            },
+            'barrers': {
+                'temp': False,
+                'sql': """
+                CREATE TABLE *table*(
+                    x INTEGER,
+                    y INTEGER,
+                    top INTEGER,
+                    left INTEGER,
+                    down INTEGER,
+                    right INTEGER,
+                    world_list_zone_id INTEGER
+                )
+                """,
+                'with_index': False
             }
         }
         for table in tables:
@@ -184,7 +199,12 @@ class Database:
 
     def insert_monsters(self, row: tuple):
         cursosr = self.connection.cursor()
-        cursosr.execute("""INSERT OR IGNORE INTO monsters(monster_id,monster_name,level, lifePoints, actionPoints, movementPoints, earthResistance, airResistance, fireResistance , waterResistance, neutralResistance) values(?,?,?,?,?,?,?,?,?,?,?)""",row)
+        cursosr.execute("""INSERT OR IGNORE INTO monsters(monster_id,monster_name,level, lifePoints, actionPoints, movementPoints, earthResistance, airResistance, fireResistance , waterResistance, neutralResistance) values(?,?,?,?,?,?,?,?,?,?,?);""",row)
+        self.connection.commit()
+
+    def insert_barrers(self, row: tuple):
+        cursosr = self.connection.cursor()
+        cursosr.execute("""INSERT OR IGNORE INTO barrers(x,y,top, left, down, right, world_list_zone_id) values(?,?,?,?,?,?,?);""",row)
         self.connection.commit()
     
     
@@ -386,6 +406,14 @@ class Database:
         sql = f"""
             SELECT * FROM job_resources_location
             WHERE resources_id in  ({id_list_sql})
+        """
+        return self.query(sql)
+
+    def get_barrer(self, x, y):
+        sql = f"""
+            SELECT * FROM barrers
+            WHERE x = {x} and
+            y = {y};
         """
         return self.query(sql)
 

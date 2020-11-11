@@ -49,6 +49,7 @@ class Resource:
             self.option = 2
             resource_list = list()
             self.add_resources_to_collect(resource_list)
+        print(resource_list)
         return resource_list
 
 
@@ -104,38 +105,70 @@ class Resource:
 
 
     def get_neighborhood(self, pivo: tuple, positions: list, group: list, level: int = 0):
-        nb_pivo_t = (-1, pivo[1], pivo[2]+1)
-        position_t, positions = self.filter_positions(nb_pivo_t, positions)        
-        nb_pivo_q = (-1, pivo[1]-1, pivo[2])
-        position_q, positions = self.filter_positions(nb_pivo_q, positions)
-        nb_pivo_x = (-1, pivo[1], pivo[2]-1)
-        position_x, positions = self.filter_positions(nb_pivo_x, positions)
-        nb_pivo_b = (-1, pivo[1]+1, pivo[2])
-        position_b, positions = self.filter_positions(nb_pivo_b, positions)
-        if position_t:
-            group = self.add_in_group(group, position_t)
-            group, positions = self.get_neighborhood(position_t[0], positions, group)
-        elif level < self.distance and position_t is None:
-            level_t = copy.deepcopy(level) + 1
-            group, positions = self.get_neighborhood(nb_pivo_t, positions, group, level_t)
-        if position_q:
-            group = self.add_in_group(group, position_q)
-            group, positions = self.get_neighborhood(position_q[0], positions, group)
-        elif level < self.distance and position_q is None:
-            level_q = copy.deepcopy(level) + 1
-            group, positions = self.get_neighborhood(nb_pivo_q, positions, group, level_q)
-        if position_x:
-            group = self.add_in_group(group, position_x)
-            group, positions = self.get_neighborhood(position_x[0], positions, group)
-        elif level < self.distance and position_x is None:
-            level_x = copy.deepcopy(level) + 1
-            group, positions = self.get_neighborhood(nb_pivo_x, positions, group, level_x)
-        if position_b:
-            group = self.add_in_group(group, position_b)
-            group, positions = self.get_neighborhood(position_b[0], positions, group)
-        elif level < self.distance and position_b is None:
-            level_b = copy.deepcopy(level) + 1
-            group, positions = self.get_neighborhood(nb_pivo_b, positions, group, level_b)
+        barrer = self.database.get_barrer(pivo[1], pivo[2])
+        # if (pivo[1] == -12 and pivo[2] == 2) or (pivo[1] == -11 and pivo[2] == 2):
+        #     print(barrer)
+        #     print(group)
+
+        if len(barrer) > 0:
+            has_t = barrer[0][2] == 1
+            has_q = barrer[0][3] == 1
+            has_x = barrer[0][4] == 1
+            has_b = barrer[0][5] == 1
+        else:
+            has_t = True
+            has_q = True
+            has_x = True
+            has_b = True
+        # if (pivo[1] == -12 and pivo[2] == 2) or (pivo[1] == -11 and pivo[2] == 2):
+        #     print(
+        #         has_t,
+        #         has_q,
+        #         has_x,
+        #         has_b
+        #     )
+        #     input()
+        if has_t:
+            nb_pivo_t = (-1, pivo[1], pivo[2]+1)
+            position_t, positions = self.filter_positions(nb_pivo_t, positions) 
+        if has_q:       
+            nb_pivo_q = (-1, pivo[1]-1, pivo[2])
+            position_q, positions = self.filter_positions(nb_pivo_q, positions)
+        if has_x: 
+            nb_pivo_x = (-1, pivo[1], pivo[2]-1)
+            position_x, positions = self.filter_positions(nb_pivo_x, positions)
+        if has_b: 
+            nb_pivo_b = (-1, pivo[1]+1, pivo[2])
+            position_b, positions = self.filter_positions(nb_pivo_b, positions)
+
+        if has_t:
+            if position_t:
+                group = self.add_in_group(group, position_t)
+                group, positions = self.get_neighborhood(position_t[0], positions, group)
+            elif level < self.distance and position_t is None:
+                level_t = copy.deepcopy(level) + 1
+                group, positions = self.get_neighborhood(nb_pivo_t, positions, group, level_t)
+        if has_q:
+            if position_q:
+                group = self.add_in_group(group, position_q)
+                group, positions = self.get_neighborhood(position_q[0], positions, group)
+            elif level < self.distance and position_q is None:
+                level_q = copy.deepcopy(level) + 1
+                group, positions = self.get_neighborhood(nb_pivo_q, positions, group, level_q)
+        if has_x:
+            if position_x:
+                group = self.add_in_group(group, position_x)
+                group, positions = self.get_neighborhood(position_x[0], positions, group)
+            elif level < self.distance and position_x is None:
+                level_x = copy.deepcopy(level) + 1
+                group, positions = self.get_neighborhood(nb_pivo_x, positions, group, level_x)
+        if has_b:
+            if position_b:
+                group = self.add_in_group(group, position_b)
+                group, positions = self.get_neighborhood(position_b[0], positions, group)
+            elif level < self.distance and position_b is None:
+                level_b = copy.deepcopy(level) + 1
+                group, positions = self.get_neighborhood(nb_pivo_b, positions, group, level_b)
         return group, positions
 
 
@@ -229,7 +262,7 @@ class Resource:
             comparation_list=self.get_groups_quantities(groups),
             resources_ids=resources_ids
         )
-        print(groups_index)
+        # print(groups_index)
         itens_to_search = {}
         for key in groups_index:
             itens_to_search[str(groups_index[key])] = self.cells_in_groups[key]
