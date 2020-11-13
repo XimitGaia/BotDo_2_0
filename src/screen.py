@@ -1,4 +1,4 @@
-from search import Search
+from tools.search import Search
 import numpy as np
 from PIL import Image
 from PIL import ImageGrab
@@ -6,6 +6,7 @@ import time
 import os
 import pytesseract
 import pyautogui
+import win32gui
 
 
 #proportioon Widht_screen/width_action_screen = 1.415
@@ -27,20 +28,6 @@ class Screen:
             self.screen_size[1]
             )
         self.chat_input = None
-        self.get_chat_input()
-        if mode == 'battle':
-            self.team = None
-            self.timeline_region = None
-            self.fight_markers_regions = None
-            self.cells = []
-            self.walls = []
-            self.holes = []
-            self.start_positions = []
-            self.get_timeline_region()
-            self.get_battle_map_info()
-
-        if mode == 'login':
-            seila = None
 
 
     def get_screen_size(self):
@@ -72,7 +59,7 @@ class Screen:
         screen = screen
         matches = self.filter_markers_points(
             marker_size=marker.size,
-            match_list=Search.search(
+            match_list=Search.search_image(
                 image=marker,
                 screen=screen,
                 match_tolerance=0.01,
@@ -122,6 +109,24 @@ class Screen:
         central_point = ((region[0]+region[2])/2 , (region[1]+region[3])/2)
         self.chat_input = central_point
         
+    # bring_character_to_front
+    def window_enum_handler(self,hwnd, resultList):
+        if win32gui.IsWindowVisible(hwnd) and win32gui.GetWindowText(hwnd) != '':
+            resultList.append((hwnd, win32gui.GetWindowText(hwnd)))
+
+    def get_app_list(self,handles=[]):
+        mlst=[]
+        win32gui.EnumWindows(self.window_enum_handler, handles)
+        for handle in handles:
+            mlst.append(handle)
+        return mlst
+
+    def bring_character_to_front(self, name:str):
+        appwindows = self.get_app_list()
+        for i in appwindows:
+            if name in i[1].lower():
+                win32gui.SetForegroundWindow(i[0])
+
 
 ###################################################################################################
 #  ________  ________  _________  _________  ___       _______           _____ ______   ________  ________  _______      
@@ -133,17 +138,14 @@ class Screen:
 #     \|_______|\|__|\|__|    \|__|      \|__|  \|_______|\|_______|        \|__|     \|__|\|_______|\|_______|\|_______|
 ##################################################################################################
 
-                                                                                                                        
-    def get_timeline_region(self):
-        self.timeline_region = (self.game_active_screen[2],0,self.screen_size[0],self.screen_size[1])
-
+                                                                                                          
+#################################### talvez obsoletos ########################################
     def get_timeline_marker(self,marker:str):
         non_filtred_markers = self.get_marked_area_or_points(marker_number=1,screen=self.timeline_region,marker= marker)
         filtred_markers = [position for position in non_filtred_markers if non_filtred_markers[0][0] == position[0] or abs(non_filtred_markers[0][0]-position[0]) > 5]
         filtred_markers.sort(key=lambda tup: tup[1])
         return filtred_markers
-
-    
+   
     def get_timeline_changed_position(self):
         positions_blue = self.get_timeline_marker(marker='timeline_enemy_marker')
         positions_red = self.get_timeline_marker(marker='timeline_ally_marker')
@@ -156,8 +158,6 @@ class Screen:
             return all_positions.index(max_position),'blue'
         return all_positions.index(max_position), 'red'
 
-
-
     def get_fight_markers_regions(self)->dict:
             return {
                 'res_region': self.get_marked_area_or_points(marker='res_marker',screen=self.bottom_region),
@@ -169,45 +169,43 @@ class Screen:
         region_image = ImageGrab.grab(table_region)
         return pytesseract.image_to_string(region_image,config='--psm 4 -c tessedit_char_whitelist=-%0123456789')
 
-    def text_hp_ap_mp_list_on_screen(self,list_region:tuple)->str:
-        region_image = ImageGrab.grab(list_region)
+
+
+##################################### fim talvez obsoletos ########################################
+
+
+
+
+    def text_hp_ap_mp_list_on_screen(self,region:tuple)->str:
+        region_image = ImageGrab.grab(region)
         return pytesseract.image_to_string(region_image,config='--psm 6 -c tessedit_char_whitelist=-/0123456789')
 
+    def get_timeline_region(self):
+        return (self.game_active_screen[2],0,self.screen_size[0],self.screen_size[1])
+####################################   Battle map_info #########################################
     def get_action_screen_y_step(self):
         return (self.game_active_screen[3]-self.game_active_screen[1])/41
     
     def get_action_screen_x_step(self):
         return (self.game_active_screen[2]-self.game_active_screen[0])/14.5
 
-    def get_comparation_group(self,point: tuple)->list:
+    def get_comparation_group(self,point: tuple)->list: #point = (x,y)
         comparation_group = []
         for y in range(point[1]-1,point[1]+2):
             for x in range(point[0]-1,point[0]+2):
                 comparation_group.append((x,y))
         return comparation_group
 
-    def define_and_append_cell_group(self,position_number:int,pixels: list):
-        if pixels[1:] == pixels[:-1]:# if all pixels are equal
-            if pixels[0] == [142, 134, 94] or pixels[0] == [150, 142, 103]:
-                self.cells.append(position_number)
-            elif pixels[0] == [0, 0, 0]:
-                self.holes.append(position_number)
-            elif pixels[0] == [88, 83, 58]:
-                self.walls.append(position_number)
-            elif pixels[0] == [221, 34, 0]:
-                self.cells.append(position_number)
-                self.team = 'red'
-                self.start_positions.append(position_number)
-            elif pixels[0] == [0, 34, 221]:
-                self.cells.append(position_number)
-                self.team = 'blue'
-                self.start_positions.append(position_number)
-            else:# enemy start positions
-                self.cells.append(position_number)
-        else:
-            self.cells.append(position_number)
-
     def get_battle_map_info(self):
+        #variables to return
+        team = None
+        cells = []
+        walls = []
+        holes = []
+        start_positions = []
+        timeline_region = self.get_timeline_region()
+        #end of variables
+        #define step and get the screen image to compare
         step_x = self.get_action_screen_x_step()
         step_y = self.get_action_screen_y_step()
         y_start = step_y * 0.5 # make the poinst match 1/4 of the high of the losangle
@@ -233,15 +231,44 @@ class Screen:
         for y in self.y_range:
             for x in x_range_color:
                 comparation_group = self.get_comparation_group((round(x),round(y)))
-                comparation_group_pixels = []
+                pixels = []
                 for xcoord,ycoord in comparation_group:
-                    comparation_group_pixels.append(list(action_screen[ycoord][xcoord]))
-                self.define_and_append_cell_group(position_number=position_number,pixels=comparation_group_pixels)
+                    pixels.append(list(action_screen[ycoord][xcoord]))
+                #define the group of the cell
+                if pixels[1:] == pixels[:-1]:# if all pixels are equal
+                    if pixels[0] == [142, 134, 94] or pixels[0] == [150, 142, 103]:
+                        cells.append(position_number)
+                    elif pixels[0] == [0, 0, 0]:
+                        holes.append(position_number)
+                    elif pixels[0] == [88, 83, 58]:
+                        walls.append(position_number)
+                    elif pixels[0] == [221, 34, 0]:
+                        cells.append(position_number)
+                        team = 'red'
+                        start_positions.append(position_number)
+                    elif pixels[0] == [0, 34, 221]:
+                        cells.append(position_number)
+                        team = 'blue'
+                        start_positions.append(position_number)
+                    else:# enemy start positions
+                        cells.append(position_number)
+                else:
+                    cells.append(position_number)
+            #change the index of the position and the translation of the row
                 position_number += 1
             if x_range_color == self.x_range_black:
                 x_range_color = self.x_range_white
             else:
                 x_range_color = self.x_range_black
+        
+        return {
+            'cells': cells,
+            'walls': walls,
+            'holes': holes,
+            'start_positions': start_positions,
+            'team': team,
+            'timeline_region': timeline_region
+        }
 
     def map_to_screen(self, cell_number:int):
         ycoord = (cell_number//14)
@@ -260,10 +287,11 @@ class Screen:
             if screen.getpixel(point) != (142, 134, 94) and screen.getpixel(point) != (150, 142, 103):
                 occupied_cells.append(cell)
         return occupied_cells
-###################################
+################################### End of Battle map_info #######################################
 
 
-ad = time.time()
-s = Screen(mode='battle')
-print(s.get_timeline_changed_position())
-print(time.time()-ad)
+# ad = time.time()
+s = Screen()
+print(s.get_marked_area_or_points())
+# print(s.get_timeline_changed_position())
+# print(time.time()-ad)

@@ -9,14 +9,25 @@ sys.path.append(str(path.parents[0]))
 from src.tools.replace_files import replace_files
 from database.sqlite import Database
 from src.goals.resource import Resource
+from src.state.state import State
+from src.resolver import Resolver
+from src.screen import Screen
 
 print('Initialize database module')
 database = Database()
 print('Changing files')
 replace_files()
+print('Initialize Screen module')
+screen = Screen()
+print('Initialize State module')
+state = State()
+print('Initialize Observers')
+screen.observe_errors()#static
+screen.observe_battle()#static
+screen.observe_chat()#static
 
 
-
+input()
 while True: 
     os.system('cls' if os.name == 'nt' else 'clear')
     print("""

@@ -12,3 +12,5 @@ def replace_files():
     distutils.dir_util.copy_tree(local_path_local,dofus_local_path)
     distutils.dir_util.copy_tree(local_path_roaming,dofus_roaming_path)
 
+if __name__ == "__main__":
+    replace_files()

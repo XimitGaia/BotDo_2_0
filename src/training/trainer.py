@@ -102,7 +102,7 @@ class Trainer:
                             for l in np.arange(saturation_min,saturation_max + 0.01,saturation_step):
                                 bright_count = bright_min
                                 for m in np.arange(bright_min,bright_max + 0.01,bright_step):
-                                    match_list, time_total = Search.search(
+                                    match_list, time_total = Search.search_image(
                                         image=image,
                                         screen=screen,
                                         match_tolerance=match_count,

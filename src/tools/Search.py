@@ -7,11 +7,12 @@ import numpy as np
 import colorsys
 import typing
 import time
+import pyautogui
 
 class Search:
     
     @staticmethod
-    def search(
+    def search_image(
         image: PngImagePlugin.PngImageFile,
         match_tolerance: float = 0.02,
         screen = '',
@@ -137,16 +138,31 @@ class Search:
                     return True
         return False
 
+
+    @staticmethod
+    def search_color(RGB: tuple, region: tuple):
+        color = RGB
+        image_to_search_in = ImageGrab.grab(region)
+        pixel_matrix = np.array(image_to_search_in)
+        matches = []
+        for x in range(0,image_to_search_in.size[0]):
+            for y in range(0,image_to_search_in.size[1]):
+                if color == tuple(pixel_matrix[y][x]):
+                    matches.append((x + region[0], y + region[1]))
+        return matches
+
 if __name__ == '__main__':
-    import keyboard
-    img = Image.open("C:\\Users\\Lucas\\Desktop\\teste.png")
-    #img.thumbnail((5,5), Image.ANTIALIAS)
-    while True:
-        if keyboard.is_pressed('control+alt'):
-            print('Started')
-            break
-    #print(img.size)
-    print(Search.search(image=img))
+    # import keyboard
+    # img = Image.open("C:\\Users\\Lucas\\Desktop\\teste.png")
+    # #img.thumbnail((5,5), Image.ANTIALIAS)
+    # while True:
+    #     if keyboard.is_pressed('control+alt'):
+    #         print('Started')
+    #         break
+    # #print(img.size)
+    # print(Search.search_image(image=img))
+    s = Search()
+    s.search_color(RGB=(255,0,0),region=(182,654,511,767))
 
 
 

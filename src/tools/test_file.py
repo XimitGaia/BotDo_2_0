@@ -14,7 +14,7 @@ while True:
         pyautogui.click((1050,244))
         time.sleep(0.1)
     if keyboard.is_pressed("."):
-        file_name = re.search(r"\d+\.swf",pytesseract.image_to_string(ImageGrab.grab((1092,234,1145,248)), config= '--psm 8 --oem 3 -c tessedit_char_whitelist=.swf0123456789'))[0]
+        file_name = re.search_image(r"\d+\.swf",pytesseract.image_to_string(ImageGrab.grab((1092,234,1145,248)), config= '--psm 8 --oem 3 -c tessedit_char_whitelist=.swf0123456789'))[0]
         pyautogui.click((-878,26))
         pyautogui.typewrite(f"{file_name} - ")
         while True:
