@@ -29,7 +29,7 @@ image = Image.open("C:\\Users\\Lucas\\Desktop\\Untitled.png")
 time.sleep(1)
 a = search.search_image(image=image, screen=bottom_region)
 while True:
-    a = search.search_color(RGB=(76, 0, 61), region=bottom_region)
+    a = search.search_color(RGB=(76, 0, 61), region= bottom_region)
     if len(a) > 0:
         print('battle')
     else:

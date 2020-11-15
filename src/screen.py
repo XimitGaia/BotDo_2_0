@@ -1,4 +1,4 @@
-from tools.search import Search
+from src.tools.search import Search
 import numpy as np
 from PIL import Image
 from PIL import ImageGrab
@@ -291,7 +291,5 @@ class Screen:
 
 
 # ad = time.time()
-s = Screen()
-print(s.get_marked_area_or_points())
 # print(s.get_timeline_changed_position())
 # print(time.time()-ad)

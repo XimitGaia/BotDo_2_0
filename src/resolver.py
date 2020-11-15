@@ -1,33 +1,15 @@
-import threading
 import time
 
 
 
 class Resolver:
-    def __init__(self, state):
+
+
+    def __init__(self,state):
         self.state = state
-        self.seila1()
-        self.state.set_state()
+        self.run()
 
 
-
-
-
-    def seila1(self):
+    def run(self):
         while True:
-            if self.state
-                cont = 0
-                while True:
-                    print(cont)
-                    time.sleep(1)
-                    if cont == 20:
-                        break
-
-
-    def seila2(self):
-        cont = 0
-        while True:
-            print(cont, '2')
-            time.sleep(1)
-            if cont == 20:
-                break
+            print(self.state.state['status'])

@@ -12,24 +12,26 @@ from src.goals.resource import Resource
 from src.state.state import State
 from src.resolver import Resolver
 from src.screen import Screen
+from src.observers import Observers
 
+
+debug = bool(int(input('debug:')))
 print('Initialize database module')
 database = Database()
 print('Changing files')
-replace_files()
+if not debug:
+    replace_files()
 print('Initialize Screen module')
 screen = Screen()
 print('Initialize State module')
-state = State()
+state = dict({'status': 'initializing'})
+state = State(state=state, debug=debug)
 print('Initialize Observers')
-screen.observe_errors()#static
-screen.observe_battle()#static
-screen.observe_chat()#static
+Observers.battle_observer(state=state,debug=debug)
 
 
-input()
 while True: 
-    os.system('cls' if os.name == 'nt' else 'clear')
+    #os.system('cls' if os.name == 'nt' else 'clear')
     print("""
      ____   ___  _____ _   _ ____    ____   ___ _____ 
     |  _ \ / _ \|  ___| | | / ___|  | __ ) / _ \_   _|
