@@ -10,13 +10,13 @@ import time
 import pyautogui
 
 class Search:
-    
+
     @staticmethod
     def search_image(
         image: PngImagePlugin.PngImageFile,
         match_tolerance: float = 0.02,
         screen = '',
-        color_tolerance: float = 0.02, 
+        color_tolerance: float = 0.02,
         validator_group_porcentage: float = 0.05,
         saturation_tolerance: float = 0.05,
         bright_tolerance: float = 0.07,
@@ -26,7 +26,7 @@ class Search:
     )-> list:#screen = (x1,y1,x2,y2) rectangle top left, button right, all others parameters variate between 0 and 1
         if trainer:
             start_time = time.time()
-        if type(screen) == tuple or screen == '':  
+        if type(screen) == tuple or screen == '':
             screen = ImageGrab.grab(screen)#grab the screen ('' is fullscreen) or (x1,y1,x2,y2)
         else:
             screen = screen
@@ -57,7 +57,7 @@ class Search:
                         pixel_2_HSV=screen_HSV.getpixel((x+pos[0],y+pos[1])),
                         color_tolerance=color_tolerance,
                         saturation_tolerance=saturation_tolerance,
-                        bright_tolerance=bright_tolerance 
+                        bright_tolerance=bright_tolerance
                     ):# check the pixel are the same or similar
                         validator_error += 1
                         if validator_error >= round(len(validator_group)*match_tolerance):#if validation exeeds the number of non-validated pixels allowed it breaks
@@ -72,7 +72,7 @@ class Search:
                             pixel_2_HSV=screen_HSV.getpixel((x+pos[0],y+pos[1])),
                             color_tolerance=color_tolerance,
                             saturation_tolerance=saturation_tolerance,
-                            bright_tolerance=bright_tolerance 
+                            bright_tolerance=bright_tolerance
                         ):
                             match_error += 1
                             if match_error >= round(len(rest_group) * match_tolerance):
@@ -83,7 +83,7 @@ class Search:
         if trainer == True:
             total_time = float(time.time() - start_time)
             return total_matches, total_time
-        return total_matches    
+        return total_matches
 
 
     @staticmethod
@@ -97,7 +97,7 @@ class Search:
                 if image.mode == 'RGB' or matrix[pixel_y][pixel_x][3] == 255:
                     valid_pixels.append((pixel_x,pixel_y))
         return valid_pixels
-    
+
     @staticmethod
     def _get_validator_group(valid_pixels: list,validator_group_porcentage:float = 0.05):# get some piexels to pre-validate the image
         rest_group = valid_pixels
@@ -148,7 +148,8 @@ class Search:
         for x in range(0,image_to_search_in.size[0]):
             for y in range(0,image_to_search_in.size[1]):
                 if color == tuple(pixel_matrix[y][x]):
-                    matches.append((x + region[0], y + region[1]))
+                    if region != '':
+                        matches.append((x + region[0], y + region[1]))
         return matches
 
 if __name__ == '__main__':
@@ -162,7 +163,7 @@ if __name__ == '__main__':
     # #print(img.size)
     # print(Search.search_image(image=img))
     s = Search()
-    s.search_color(RGB=(255,0,0),region=(182,654,511,767))
+    s.search_color(RGB=(255,0,0))
 
 
 

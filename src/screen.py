@@ -1,9 +1,17 @@
+# Autoloader
+import sys
+import os
+from pathlib import Path
+path = Path(__file__).resolve()
+sys.path.append(str(path.parents[1]))
+root_path = str(path.parents[1])
+
+# Import system
 from src.tools.search import Search
 import numpy as np
 from PIL import Image
 from PIL import ImageGrab
 import time
-import os
 import pytesseract
 import pyautogui
 import win32gui
@@ -22,74 +30,18 @@ class Screen:
         self.get_screen_size()
         self.game_active_screen = None
         self.get_game_active_screen()
-        self.bottom_region = (0,
-            round(0.65*self.screen_size[1]),
-            self.screen_size[0],
-            self.screen_size[1]
-            )
+        self.bottom_region = None
+        self.get_bottom_region()
+        self.fight_buttom_region = None
+        self.get_fight_buttom_region()
         self.chat_input = None
+
+
+
 
 
     def get_screen_size(self):
         self.screen_size = ImageGrab.grab('').size
-
-    def filter_markers_points(
-        self,
-        marker_size:tuple,
-        match_list:list
-    ):
-        if len(match_list) == 0:
-            return match_list
-        posto = 0
-        match_list = match_list
-        for match in match_list[1:]:
-            if abs(match_list[posto][0] - match[0]) < marker_size[0] and abs(match_list[posto][1] - match[1]) < marker_size[1]:
-                match_list.remove(match)
-            else:
-                posto +=1
-        return match_list
-    
-    def get_marked_area_or_points(
-        self,
-        marker_number:int,
-        screen = '',
-        marker:str = ''
-    )->tuple:
-        marker = Image.open(f'{self.markers_path}{marker}.png')
-        screen = screen
-        matches = self.filter_markers_points(
-            marker_size=marker.size,
-            match_list=Search.search_image(
-                image=marker,
-                screen=screen,
-                match_tolerance=0.01,
-                validator_group_porcentage=1,
-                saturation_tolerance=0.01,
-                bright_tolerance=0.01,          
-            )
-        )
-        if len(matches) <= 1 and marker_number == 2:
-            print('Marker not found')
-            return None
-        if marker_number == 1:
-            if screen != '':
-                return [(screen[0]+match[0],screen[1]+match[1]) for match in matches]
-            return matches
-        marked_area = (
-            matches[0][0],
-            matches[0][1],
-            matches[-1][0],
-            matches[-1][1]
-        )
-        if screen != '':
-            marked_area = (
-                marked_area[0]+screen[0],
-                marked_area[1]+screen[1],
-                marked_area[2]+screen[0], 
-                marked_area[3]+screen[1] 
-            )
-        return marked_area
-    
 
     def get_game_active_screen(self):#(x1,y1,x2,y2)
         screen_proportion = 0.704
@@ -108,55 +60,36 @@ class Screen:
         region = self.get_marked_area_or_points(screen=self.bottom_region,marker_number=2,marker='chat_input_marker')
         central_point = ((region[0]+region[2])/2 , (region[1]+region[3])/2)
         self.chat_input = central_point
-        
-    # bring_character_to_front
-    def window_enum_handler(self,hwnd, resultList):
-        if win32gui.IsWindowVisible(hwnd) and win32gui.GetWindowText(hwnd) != '':
-            resultList.append((hwnd, win32gui.GetWindowText(hwnd)))
 
-    def get_app_list(self,handles=[]):
-        mlst=[]
-        win32gui.EnumWindows(self.window_enum_handler, handles)
-        for handle in handles:
-            mlst.append(handle)
-        return mlst
+    def get_bottom_region(self):
+        self.bottom_region = (
+            0,
+            round(0.65*self.screen_size[1]),
+            self.screen_size[0],
+            self.screen_size[1]
+        )
 
-    def bring_character_to_front(self, name:str):
-        appwindows = self.get_app_list()
-        for i in appwindows:
-            if name in i[1].lower():
-                win32gui.SetForegroundWindow(i[0])
+    def get_fight_buttom_region(self):
+        self.fight_buttom_region = (
+            0.75419*(self.game_active_screen[2] - self.game_active_screen[0] )+ self.game_active_screen[0],
+            self.game_active_screen[3],
+            self.game_active_screen[2],
+            self.screen_size[1]
+        )
 
 
-###################################################################################################
-#  ________  ________  _________  _________  ___       _______           _____ ______   ________  ________  _______      
-# |\   __  \|\   __  \|\___   ___\\___   ___\\  \     |\  ___ \         |\   _ \  _   \|\   __  \|\   ___ \|\  ___ \     
-# \ \  \|\ /\ \  \|\  \|___ \  \_\|___ \  \_\ \  \    \ \   __/|        \ \  \\\__\ \  \ \  \|\  \ \  \_|\ \ \   __/|    
-#  \ \   __  \ \   __  \   \ \  \     \ \  \ \ \  \    \ \  \_|/__       \ \  \\|__| \  \ \  \\\  \ \  \ \\ \ \  \_|/__  
-#   \ \  \|\  \ \  \ \  \   \ \  \     \ \  \ \ \  \____\ \  \_|\ \       \ \  \    \ \  \ \  \\\  \ \  \_\\ \ \  \_|\ \ 
-#    \ \_______\ \__\ \__\   \ \__\     \ \__\ \ \_______\ \_______\       \ \__\    \ \__\ \_______\ \_______\ \_______\
-#     \|_______|\|__|\|__|    \|__|      \|__|  \|_______|\|_______|        \|__|     \|__|\|_______|\|_______|\|_______|
-##################################################################################################
 
-                                                                                                          
-#################################### talvez obsoletos ########################################
-    def get_timeline_marker(self,marker:str):
-        non_filtred_markers = self.get_marked_area_or_points(marker_number=1,screen=self.timeline_region,marker= marker)
-        filtred_markers = [position for position in non_filtred_markers if non_filtred_markers[0][0] == position[0] or abs(non_filtred_markers[0][0]-position[0]) > 5]
-        filtred_markers.sort(key=lambda tup: tup[1])
-        return filtred_markers
-   
-    def get_timeline_changed_position(self):
-        positions_blue = self.get_timeline_marker(marker='timeline_enemy_marker')
-        positions_red = self.get_timeline_marker(marker='timeline_ally_marker')
-        all_positions = positions_blue + positions_red
-        all_positions.sort(key=lambda tup: tup[1])
-        max_position = max(all_positions,key=lambda tup: tup[0])
-        if max_position[0] == min(all_positions,key=lambda tup: tup[0])[0]:
-            return 'invocation'
-        elif max_position in positions_blue:
-            return all_positions.index(max_position),'blue'
-        return all_positions.index(max_position), 'red'
+
+#        :::::::::      ::: ::::::::::: ::::::::::: :::        ::::::::::            :::   :::    ::::::::  :::::::::  ::::::::::
+#       :+:    :+:   :+: :+:   :+:         :+:     :+:        :+:                  :+:+: :+:+:  :+:    :+: :+:    :+: :+:
+#      +:+    +:+  +:+   +:+  +:+         +:+     +:+        +:+                 +:+ +:+:+ +:+ +:+    +:+ +:+    +:+ +:+
+#     +#++:++#+  +#++:++#++: +#+         +#+     +#+        +#++:++#            +#+  +:+  +#+ +#+    +:+ +#+    +:+ +#++:++#
+#    +#+    +#+ +#+     +#+ +#+         +#+     +#+        +#+                 +#+       +#+ +#+    +#+ +#+    +#+ +#+
+#   #+#    #+# #+#     #+# #+#         #+#     #+#        #+#                 #+#       #+# #+#    #+# #+#    #+# #+#
+#  #########  ###     ### ###         ###     ########## ##########          ###       ###  ########  #########  ##########
+
+
+
 
     def get_fight_markers_regions(self)->dict:
             return {
@@ -169,23 +102,19 @@ class Screen:
         region_image = ImageGrab.grab(table_region)
         return pytesseract.image_to_string(region_image,config='--psm 4 -c tessedit_char_whitelist=-%0123456789')
 
-
-
-##################################### fim talvez obsoletos ########################################
-
-
-
-
     def text_hp_ap_mp_list_on_screen(self,region:tuple)->str:
         region_image = ImageGrab.grab(region)
         return pytesseract.image_to_string(region_image,config='--psm 6 -c tessedit_char_whitelist=-/0123456789')
 
     def get_timeline_region(self):
         return (self.game_active_screen[2],0,self.screen_size[0],self.screen_size[1])
-####################################   Battle map_info #########################################
+
+
+
+
     def get_action_screen_y_step(self):
         return (self.game_active_screen[3]-self.game_active_screen[1])/41
-    
+
     def get_action_screen_x_step(self):
         return (self.game_active_screen[2]-self.game_active_screen[0])/14.5
 
@@ -260,7 +189,7 @@ class Screen:
                 x_range_color = self.x_range_white
             else:
                 x_range_color = self.x_range_black
-        
+
         return {
             'cells': cells,
             'walls': walls,
@@ -287,9 +216,47 @@ class Screen:
             if screen.getpixel(point) != (142, 134, 94) and screen.getpixel(point) != (150, 142, 103):
                 occupied_cells.append(cell)
         return occupied_cells
-################################### End of Battle map_info #######################################
 
 
-# ad = time.time()
-# print(s.get_timeline_changed_position())
-# print(time.time()-ad)
+
+
+
+
+
+
+#        :::::::: ::::::::::: :::    ::: :::::::::: :::::::::   ::::::::
+#      :+:    :+:    :+:     :+:    :+: :+:        :+:    :+: :+:    :+:
+#     +:+    +:+    +:+     +:+    +:+ +:+        +:+    +:+ +:+
+#    +#+    +:+    +#+     +#++:++#++ +#++:++#   +#++:++#:  +#++:++#++
+#   +#+    +#+    +#+     +#+    +#+ +#+        +#+    +#+        +#+
+#  #+#    #+#    #+#     #+#    #+# #+#        #+#    #+# #+#    #+#
+#  ########     ###     ###    ### ########## ###    ###  ########
+
+    # bring_character_to_front
+    def window_enum_handler(self,hwnd, resultList):
+        if win32gui.IsWindowVisible(hwnd) and win32gui.GetWindowText(hwnd) != '':
+            resultList.append((hwnd, win32gui.GetWindowText(hwnd)))
+
+    def get_app_list(self,handles=[]):
+        mlst=[]
+        win32gui.EnumWindows(self.window_enum_handler, handles)
+        for handle in handles:
+            mlst.append(handle)
+        return mlst
+
+    def bring_character_to_front(self, name:str):
+        appwindows = self.get_app_list()
+        for i in appwindows:
+            if name in i[1].lower():
+                win32gui.SetForegroundWindow(i[0])
+
+
+
+
+if __name__ == "__main__":
+    screen = Screen()
+    points = screen.fight_bottom_region
+    time.sleep(1)
+    pyautogui.moveTo((points[0],points[1]))
+    time.sleep(1)
+    pyautogui.moveTo((points[2],points[3]))

@@ -28,7 +28,7 @@ def get_continents_external_info():
             for y_itens in group[1].split(','):
                 y_itens = y_itens.split('L')
                 Y0 =  int(y_itens[0])
-                Y1 =  int(y_itens[0]) + int(y_itens[1]) 
+                Y1 =  int(y_itens[0]) + int(y_itens[1])
                 for y_coord in range(Y0, Y1):
                     valid_positions.append((x_coord, y_coord))
 
@@ -82,31 +82,32 @@ def get_continents_internal_bounds():
                 Q = int(map_direction_info["leftExists"])
                 X = int(map_direction_info["bottomExists"])
                 B = int(map_direction_info["rightExists"])
+                # print(T,Q,X,B)
                 #print(type(xcoord),type(ycoord))
-                # bounds.append((xcoord, ycoord, T, Q, X, B, 1))   
-                if ((T,Q,X,B)) != (0,0,0,0):  
-                    if ((T,Q,X,B)) != (1,0,0,1):
-                        if ((T,Q,X,B)) != (0,1,1,0):
-                            bounds.append((xcoord, ycoord))              
+                bounds.append((xcoord, ycoord, T, Q, X, B, 1))
+                # if ((T,Q,X,B)) != (0,0,0,0):
+                #     if ((T,Q,X,B)) != (1,0,0,1):
+                #         if ((T,Q,X,B)) != (0,1,1,0):
+                #             bounds.append((xcoord, ycoord))
                 break
 
-# generate_continents_external_bounds()
-# print(valid_positions)
+generate_continents_external_bounds()
 get_continents_internal_bounds()
-# database = Database()
-# for row in bounds:
-#     database.insert_barrers(row = row)
+print(bounds)
+database = Database()
+for row in bounds:
+    database.insert_barrers(row = row)
 
 
 
 
 
-a = Image.open("C:\\Users\\Lucas\\Desktop\\Untitled2.png")
-pixel_a = a.load()
-for i in range(a.size[0]):
-    for j in range(a.size[1]):
-        x = i- 94
-        y = j -95
-        if (x, y) in bounds:
-            pixel_a[i*2,j] = (0,0,0)
-a.show()
+    # a = Image.open("C:\\Users\\Lucas\\Desktop\\Untitled2.png")
+    # pixel_a = a.load()
+    # for i in range(a.size[0]):
+    #     for j in range(a.size[1]):
+    #         x = i- 94
+    #         y = j -95
+    #         if (x, y) in bounds:
+    #             pixel_a[i*2,j] = (0,0,0)
+#a.show()

@@ -1,3 +1,12 @@
+# Autoloader
+import sys
+import os
+from pathlib import Path
+path = Path(__file__).resolve()
+sys.path.append(str(path.parents[1]))
+root_path = str(path.parents[2])
+
+# Import system
 import time
 from src.tools.search import Search
 

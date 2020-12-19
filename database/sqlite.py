@@ -1,21 +1,30 @@
+# Autoloader
+import sys
+import os
+from pathlib import Path
+path = Path(__file__).resolve()
+sys.path.append(str(path.parents[1]))
+root_path = str(path.parents[1])
+
+# Import system
 import sqlite3
 
 
 class Database:
     def __init__(self):
-        self.connection = sqlite3.connect('.\dofus_sqlite.db')
+        self.connection = sqlite3.connect(f'{root_path}{os.sep}database{os.sep}dofus_sqlite.db')
         self.check_or_create_tables()
         self.insert_values()
-    
-    # 
-    #       ::::::::  :::    ::: :::::::::: ::::::::  :::    :::            ::::::::  :::::::::             ::::::::  :::::::::  ::::::::::     ::: ::::::::::: :::::::::: 
-    #     :+:    :+: :+:    :+: :+:       :+:    :+: :+:   :+:            :+:    :+: :+:    :+:           :+:    :+: :+:    :+: :+:          :+: :+:   :+:     :+:         
-    #    +:+        +:+    +:+ +:+       +:+        +:+  +:+             +:+    +:+ +:+    +:+           +:+        +:+    +:+ +:+         +:+   +:+  +:+     +:+          
-    #   +#+        +#++:++#++ +#++:++#  +#+        +#++:++              +#+    +:+ +#++:++#:            +#+        +#++:++#:  +#++:++#   +#++:++#++: +#+     +#++:++#      
-    #  +#+        +#+    +#+ +#+       +#+        +#+  +#+             +#+    +#+ +#+    +#+           +#+        +#+    +#+ +#+        +#+     +#+ +#+     +#+            
-    # #+#    #+# #+#    #+# #+#       #+#    #+# #+#   #+#            #+#    #+# #+#    #+#           #+#    #+# #+#    #+# #+#        #+#     #+# #+#     #+#             
-    # ########  ###    ### ########## ########  ###    ### ########## ########  ###    ### ########## ########  ###    ### ########## ###     ### ###     ##########       
-    # 
+
+    #
+    #       ::::::::  :::    ::: :::::::::: ::::::::  :::    :::            ::::::::  :::::::::             ::::::::  :::::::::  ::::::::::     ::: ::::::::::: ::::::::::
+    #     :+:    :+: :+:    :+: :+:       :+:    :+: :+:   :+:            :+:    :+: :+:    :+:           :+:    :+: :+:    :+: :+:          :+: :+:   :+:     :+:
+    #    +:+        +:+    +:+ +:+       +:+        +:+  +:+             +:+    +:+ +:+    +:+           +:+        +:+    +:+ +:+         +:+   +:+  +:+     +:+
+    #   +#+        +#++:++#++ +#++:++#  +#+        +#++:++              +#+    +:+ +#++:++#:            +#+        +#++:++#:  +#++:++#   +#++:++#++: +#+     +#++:++#
+    #  +#+        +#+    +#+ +#+       +#+        +#+  +#+             +#+    +#+ +#+    +#+           +#+        +#+    +#+ +#+        +#+     +#+ +#+     +#+
+    # #+#    #+# #+#    #+# #+#       #+#    #+# #+#   #+#            #+#    #+# #+#    #+#           #+#    #+# #+#    #+# #+#        #+#     #+# #+#     #+#
+    # ########  ###    ### ########## ########  ###    ### ########## ########  ###    ### ########## ########  ###    ### ########## ###     ### ###     ##########
+    #
 
     def check_if_tabel_exists(self, table_name: str):
         cursor = self.connection.cursor()
@@ -31,7 +40,7 @@ class Database:
         cursor = self.connection.cursor()
         tables = {
             'world_list_zone':  {
-                'temp': False,            
+                'temp': False,
                 'sql':  """
                     CREATE TABLE *table*(
                         id integer PRIMARY KEY AUTOINCREMENT,
@@ -41,7 +50,7 @@ class Database:
                 'with_index': False
             },
             'job_type':  {
-                'temp': False,            
+                'temp': False,
                 'sql':  """
                     CREATE TABLE *table*(
                         id integer PRIMARY KEY AUTOINCREMENT,
@@ -51,7 +60,7 @@ class Database:
                 'with_index': False
             },
             'jobs':  {
-                'temp': False,            
+                'temp': False,
                 'sql':  """
                     CREATE TABLE *table*(
                         id integer PRIMARY KEY AUTOINCREMENT,
@@ -63,7 +72,7 @@ class Database:
                 'with_index': False
             },
             'images':  {
-                'temp': False,            
+                'temp': False,
                 'sql':  """
                     CREATE TABLE *table*(
                         id integer PRIMARY KEY AUTOINCREMENT,
@@ -73,7 +82,7 @@ class Database:
                 'with_index': False
             },
             'job_resources_list':  {
-                'temp': False,            
+                'temp': False,
                 'sql':  """
                     CREATE TABLE *table*(
                         id integer PRIMARY KEY AUTOINCREMENT,
@@ -88,7 +97,7 @@ class Database:
                 'with_index': False
             },
             'job_resources_location':  {
-                'temp': False,            
+                'temp': False,
                 'sql':  """
                     CREATE TABLE *table*(
                         id integer PRIMARY KEY AUTOINCREMENT,
@@ -147,41 +156,41 @@ class Database:
             for table_to_create in tables_to_create:
                 if not self.check_if_tabel_exists(table_to_create):
                     create_table = sql.replace('*table*', table_to_create)
-                    cursor.execute(create_table) 
+                    cursor.execute(create_table)
                     if tables[table]['with_index']:
                         index = f"""
                             CREATE UNIQUE INDEX IF NOT EXISTS {table_to_create}_id_index
                             ON {table_to_create}(ID);
                         """
-                        cursor.execute(index) 
+                        cursor.execute(index)
                     self.connection.commit()
         cursor.close()
-    
 
-    #       ::::::::::: ::::    :::  ::::::::  :::::::::: ::::::::: ::::::::::: :::::::: 
-    #          :+:     :+:+:   :+: :+:    :+: :+:        :+:    :+:    :+:    :+:    :+: 
-    #         +:+     :+:+:+  +:+ +:+        +:+        +:+    +:+    +:+    +:+         
-    #        +#+     +#+ +:+ +#+ +#++:++#++ +#++:++#   +#++:++#:     +#+    +#++:++#++   
-    #       +#+     +#+  +#+#+#        +#+ +#+        +#+    +#+    +#+           +#+    
-    #      #+#     #+#   #+#+# #+#    #+# #+#        #+#    #+#    #+#    #+#    #+#     
-    # ########### ###    ####  ########  ########## ###    ###    ###     ########       
-         
- 
+
+    #       ::::::::::: ::::    :::  ::::::::  :::::::::: ::::::::: ::::::::::: ::::::::
+    #          :+:     :+:+:   :+: :+:    :+: :+:        :+:    :+:    :+:    :+:    :+:
+    #         +:+     :+:+:+  +:+ +:+        +:+        +:+    +:+    +:+    +:+
+    #        +#+     +#+ +:+ +#+ +#++:++#++ +#++:++#   +#++:++#:     +#+    +#++:++#++
+    #       +#+     +#+  +#+#+#        +#+ +#+        +#+    +#+    +#+           +#+
+    #      #+#     #+#   #+#+# #+#    #+# #+#        #+#    #+#    #+#    #+#    #+#
+    # ########### ###    ####  ########  ########## ###    ###    ###     ########
+
+
     def insert_world_list_zone(self, row: tuple):
         cursor = self.connection.cursor()
         cursor.execute("""insert OR IGNORE into world_list_zone(zone_name) values(?);""", row)
-        self.connection.commit()    
- 
+        self.connection.commit()
+
     def insert_job_type(self, row: tuple):
         cursor = self.connection.cursor()
         cursor.execute("""INSERT OR IGNORE INTO job_type(job_type) VALUES (?);""", row)
         self.connection.commit()
-    
+
     def insert_jobs(self, row: tuple):
         cursor = self.connection.cursor()
         cursor.execute("""INSERT OR IGNORE INTO jobs(job_name, job_type) VALUES (?, ?);""" , row)
         self.connection.commit()
-    
+
     def insert_images(self, row: tuple):
         cursor = self.connection.cursor()
         cursor.execute("""insert OR IGNORE into images(path_from_root) values(?);""" , row)
@@ -191,7 +200,7 @@ class Database:
         cursor = self.connection.cursor()
         cursor.execute("""INSERT OR IGNORE INTO job_resources_list(resources_name, resources_level, job_id, images_id) VALUES (?, ?, ?, ?);""", row)
         self.connection.commit()
-    
+
     def insert_job_resources_location(self, row: tuple):
         cursor = self.connection.cursor()
         cursor.execute("""insert OR IGNORE into job_resources_location (x, y, resources_id, resources_quantity, world_list_zone_id) values(?, ?, ?, ?, ?);""" , row)
@@ -206,16 +215,16 @@ class Database:
         cursosr = self.connection.cursor()
         cursosr.execute("""INSERT OR IGNORE INTO barrers(x,y,top, left, down, right, world_list_zone_id) values(?,?,?,?,?,?,?);""",row)
         self.connection.commit()
-    
-    
-    
-    
-    #   :+:     :+:   :+: :+:   :+:       :+:    :+: :+:       :+:    :+: 
-    #  +:+     +:+  +:+   +:+  +:+       +:+    +:+ +:+       +:+         
-    # +#+     +:+ +#++:++#++: +#+       +#+    +:+ +#++:++#  +#++:++#++   
-    # +#+   +#+  +#+     +#+ +#+       +#+    +#+ +#+              +#+    
-    # #+#+#+#   #+#     #+# #+#       #+#    #+# #+#       #+#    #+#     
-    #  ###     ###     ### ########## ########  ########## ########     
+
+
+
+
+    #   :+:     :+:   :+: :+:   :+:       :+:    :+: :+:       :+:    :+:
+    #  +:+     +:+  +:+   +:+  +:+       +:+    +:+ +:+       +:+
+    # +#+     +:+ +#++:++#++: +#+       +#+    +:+ +#++:++#  +#++:++#++
+    # +#+   +#+  +#+     +#+ +#+       +#+    +#+ +#+              +#+
+    # #+#+#+#   #+#     #+# #+#       #+#    #+# #+#       #+#    #+#
+    #  ###     ###     ### ########## ########  ########## ########
 
     def insert_values(self):
         self.insert_values_world_list_2020_11_02()
@@ -233,7 +242,7 @@ class Database:
             ('continent_amaknien',)
         ]
         self.insert_values_executor(callback=self.insert_world_list_zone, values_list=values_list)
-    
+
     def insert_values_job_type_2020_11_02(self):
         values_list =[
             ('drop_collecting',),
@@ -261,7 +270,7 @@ class Database:
 
     def insert_values_images_2020_11_02(self):
         values_list =[
-            ('dummy',),    
+            ('dummy',),
         ]
         self.insert_values_executor(callback=self.insert_images, values_list=values_list)
 
@@ -351,15 +360,15 @@ class Database:
 
 
 
- 
-#        ::::::::   :::    ::: :::::::::: :::    ::: :::::::::: :::::::: 
-#      :+:    :+:  :+:    :+: :+:        :+:    :+: :+:       :+:    :+: 
-#     +:+    +:+  +:+    +:+ +:+        +:+    +:+ +:+       +:+         
-#    +#+    +:+  +#+    +:+ +#++:++#   +#+    +:+ +#++:++#  +#++:++#++   
-#   +#+    +#+  +#+    +#+ +#+        +#+    +#+ +#+              +#+    
-#  #+#    #+#  #+#    #+# #+#        #+#    #+# #+#       #+#    #+#     
-#  ########### ########  ##########  ########  ########## ########       
-    
+
+#        ::::::::   :::    ::: :::::::::: :::    ::: :::::::::: ::::::::
+#      :+:    :+:  :+:    :+: :+:        :+:    :+: :+:       :+:    :+:
+#     +:+    +:+  +:+    +:+ +:+        +:+    +:+ +:+       +:+
+#    +#+    +:+  +#+    +:+ +#++:++#   +#+    +:+ +#++:++#  +#++:++#++
+#   +#+    +#+  +#+    +#+ +#+        +#+    +#+ +#+              +#+
+#  #+#    #+#  #+#    #+# #+#        #+#    #+# #+#       #+#    #+#
+#  ########### ########  ##########  ########  ########## ########
+
     def query(self, sql: str):
         """
         Query all rows in the tasks table
@@ -368,20 +377,19 @@ class Database:
         """
         cursor = self.connection.cursor()
         cursor.execute(sql)
-
         rows = cursor.fetchall()
         return rows
-    
+
     def get_resource_by_name_or_id(self, name_or_id)-> dict:
         sql = ""
         if name_or_id.isdigit():
             sql = f"""
-                SELECT * FROM job_resources_list 
+                SELECT * FROM job_resources_list
                 WHERE id = {name_or_id}
             """
         elif type(name_or_id) is str:
             sql = f"""
-                SELECT * FROM job_resources_list 
+                SELECT * FROM job_resources_list
                 WHERE resources_name like '%{name_or_id}%'
             """
         if sql == '':
@@ -396,7 +404,7 @@ class Database:
 
     def get_resources_by_job_id(self, job_id):
         sql = f"""
-            SELECT * FROM job_resources_list 
+            SELECT * FROM job_resources_list
             WHERE job_id = {job_id}
         """
         return self.query(sql)
@@ -417,5 +425,13 @@ class Database:
         """
         return self.query(sql)
 
+
 if __name__ == '__main__':
     database = Database()
+    sql = f"""SELECT * FROM monsters"""
+    print(database.query(sql))
+    # # sql = f"""SELECT * FROM monsters"""
+    # # print(database.query(sql))
+    # sql = f"""SELECT * FROM job_resources_locationa"""
+    # print(database.query(sql))
+    pass
