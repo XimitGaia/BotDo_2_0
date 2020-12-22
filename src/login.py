@@ -13,7 +13,6 @@ from win32gui import SetForegroundWindow
 import time
 import keyboard
 from src.tools.search import Search
-import threading
 import pyautogui
 import pytesseract
 from pytesseract import Output
@@ -37,7 +36,8 @@ class Login:
         self.characters = dict()
         self.number_of_accounts = len(self.accounts)
         self.dofus_applications_ids = list()
-        self.run()
+
+
 
     def open_new_dofus_window(self,number_of_windows):
         for i in range(0,number_of_windows):
@@ -64,7 +64,11 @@ class Login:
         pyautogui.press('alt')
         win32gui.ShowWindow(account_id,5)
         win32gui.SetForegroundWindow(account_id)
-        login_pos, pass_pos = self.wait_and_get_login_possition()
+        try:
+            login_pos, pass_pos = self.wait_and_get_login_possition()
+        except:
+            self.kill_window(account['name'])
+            return None
         pyautogui.click(login_pos)
         self.select_all()
         keyboard.press_and_release('delete')
@@ -77,7 +81,11 @@ class Login:
 
     def select_character(self, character_name, account_id):
         region_to_search = (self.screen_size[0] * 0.20863836017, self.screen_size[1] * 0.39322916667,self.screen_size[0] * 0.4450951683748,self.screen_size[1] * 0.825520833333334)
+        start_time = time.time()
         while True:
+            if time.time() - start_time > 60:
+                self.kill_window(character_name)
+                return None
             mathces = self.search.search_color(RGB=(255,0,255),region=region_to_search)
             if len(mathces) > 0:
                 break
@@ -86,8 +94,7 @@ class Login:
         try:
             character_name_index = data['text'].index(character_name)
         except:
-            pid = win32process.GetWindowThreadProcessId(account_id)[1]
-            os.kill(pid,15)
+            self.kill_window(character_name)
             return None
         xcoord, ycoord, width, height = (data['left'][character_name_index], data['top'][character_name_index], data['width'][character_name_index], data['height'][character_name_index])
         pyautogui.doubleClick((region_to_search[0] + xcoord + width/2, region_to_search[1]+ ycoord + height/2))
@@ -97,6 +104,11 @@ class Login:
         keyboard.press_and_release('a')
         keyboard.release('control')
 
+    def kill_window(self,character_name):
+        account_id = self.characters[character_name]
+        pid = win32process.GetWindowThreadProcessId(account_id)[1]
+        os.kill(pid,15)
+        del self.characters[character_name]
 
     def get_position_of_login_and_password(self,list_of_itens):
         max_xcoord = max(list_of_itens,key=lambda item:item[0])[0]
@@ -112,7 +124,10 @@ class Login:
             self.screen_size[0]*0.75,
             self.screen_size[1]*0.75
         )
+        start_time = time.time()
         while True:
+            if time.time() - start_time > 60:
+               return None
             keyboard.press_and_release('esc')
             time.sleep(1)
             password = self.search.search_color(RGB=(255,0,255),region=(region))
@@ -126,6 +141,7 @@ class Login:
         self.get_dofus_windows_handle()
         for account in self.accounts:
             self.login(account)
+        return self.characters
 
 if __name__ == "__main__":
     # def windowEnumerationHandler(hwnd, top_windows):
