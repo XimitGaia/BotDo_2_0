@@ -13,35 +13,48 @@ from src.goals.resource import Resource
 from src.state.state import State
 from src.resolver import Resolver
 from src.screen import Screen
+from src.character import Character
 from src.observers import Observers
 from src.login import Login
 import time
 import json
 import pyautogui
 
+# josn_str = sys.argv[1].replace("?", '"')
+# args = json.loads(josn_str)
+# accounts = args['accounts']
+# selects = args['selects']
 
-josn_str = sys.argv[1].replace("?", '"')
-args = json.loads(josn_str)
-accounts = args['accounts']
-selects = args['selects']
-
-debug = 1 #bool(int(input('debug:')))
-print('Initialize database module')
-database = Database()
-print('Changing files')
-if not debug:
-    replace_files()
-print('Initialize Screen module')
-screen = Screen()
-print('Initialize State module')
-state = dict({'status': 'initializing', 'threads_status':{}})
-state = State(state=state, debug=debug)
-print('Initialize Observers')
-Observers.pause_trigger_observer(state=state, debug=debug)
-Observers.battle_observer(screen=screen, state=state, debug=debug)
-print('Loading Accounts')
-login = Login(accounts, screen.screen_size)
-sucessful_accounts = login.run()
-login_error = len(accounts) - len(sucessful_accounts)
-time.sleep(2)
-print('Loading Characters')
+def run(api_data):
+    accounts_meta_data = api_data['accounts']
+    accounts = list()
+    mode = api_data['mode']
+    selects = api_data['selects']
+    print(accounts_meta_data)
+    print()
+    print(mode)
+    print()
+    print(selects)
+    debug = 1 #bool(int(input('debug:')))
+    print('Initialize database module')
+    database = Database()
+    print('Changing files')
+    if not debug:
+        replace_files()
+    print('Initialize Screen module')
+    screen = Screen()
+    print('Initialize State module')
+    state = dict({'status': 'initializing', 'threads_status':{}})
+    state = State(state=state, debug=debug)
+    print('Initialize Observers')
+    Observers.pause_trigger_observer(state=state, debug=debug)
+    Observers.battle_observer(screen=screen, state=state, debug=debug)
+    print('Loading Accounts')
+    login = Login(accounts_meta_data,screen.screen_size)
+    login.run()
+    for account in accounts_meta_data:
+        accounts.append(Character(
+            state=state,
+            screen=screen,
+            account=account
+        ))
