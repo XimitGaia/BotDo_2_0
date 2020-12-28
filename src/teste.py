@@ -1,22 +1,43 @@
+import keyboard
 import pyautogui
-from PIL import ImageGrab
-import PIL
-from PIL import Image
 import time
-import pytesseract
-import cv2
-from pytesseract import Output
-import numpy as np
+from PIL import Image
+from tools.search import Search
+import sys
+import os
+from pathlib import Path
+path = Path(__file__).resolve()
+sys.path.append(str(path.parents[1]))
+root_path = str(path.parents[1])
 
-screen_size = ImageGrab.grab('').size
-region_to_search = (screen_size[0] * 0.20863836017, screen_size[1] * 0.39322916667,screen_size[0] * 0.4450951683748,screen_size[1] * 0.825520833333334)
-pyautogui.moveTo((region_to_search[0],region_to_search[1]))
-pyautogui.moveTo((region_to_search[2],region_to_search[3]))
-# a = (286,302,609,634)
-# img = ImageGrab.grab(region_to_search)
-# #img = cv2.cvtColor(np.array(img), cv2.COLOR_RGB2BGR)
-# data = pytesseract.image_to_data(img, output_type=Output.DICT, config ='--psm 6 --oem 3')
-# i = data['text'].index('Pepinous')
 
-# x, y, w, h = (data['left'][i], data['top'][i], data['width'][i], data['height'][i])
-# pyautogui.moveTo(286+x +w/2 ,302+y +h/2)
+
+
+class Calculator:
+
+    def __init__(self, radius):
+        self.search = Search()
+        self.radius = radius
+        print(f'Calculating area of circle with radius {self.radius}m')
+        self.open_calculator()
+        time.sleep(3)
+        self.get_pi_position()
+
+    def open_calculator(self):
+        pyautogui.moveTo((1,1))
+        time.sleep(1)
+        pyautogui.click()
+        keyboard.write('Calculator')
+        time.sleep(0.1)
+        keyboard.press_and_release('enter')
+
+    def get_pi_position(self):
+        self.image = Image.open(f'{root_path}{os.sep}src{os.sep}pi.png')
+        match = self.search.search_image(self.image,match_tolerance=0.1)
+        print(match)
+
+
+
+calculator = Calculator(10)
+
+

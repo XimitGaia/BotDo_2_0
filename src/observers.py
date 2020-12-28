@@ -44,7 +44,7 @@ class Observers:
                     counter += 1
                     print(f'state.is_bussy -> {state.is_bussy}')
                     print(state.state)
-                match_list = Search.search_color(RGB=(76, 0, 61), region= screen.fight_buttom_region)
+                match_list = Search.search_color(RGB=(76, 0, 61), region=screen.fight_buttom_region)
                 if len(match_list) > 0:
                     state.set_state(key='status', value='battle')
                     not_found_count = 0
@@ -52,6 +52,7 @@ class Observers:
                     not_found_count += 1
                 if not_found_count > 10:
                     state.is_bussy = False
+                    state.set_state(key='status', value='')
                 time.sleep(0.2)
 
         battle_observer_thread = threading.Thread(target=run, args=())

@@ -72,8 +72,10 @@ class Login:
         pyautogui.click(login_pos)
         self.select_all()
         keyboard.press_and_release('delete')
+        pyautogui.click(login_pos)
         keyboard.write(account['login'])
-        pyautogui.click(pass_pos)
+        time.sleep(2)
+        keyboard.press_and_release('tab')
         keyboard.write(account['password'])
         keyboard.press_and_release('enter')
         time.sleep(1)
@@ -100,9 +102,11 @@ class Login:
         pyautogui.doubleClick((region_to_search[0] + xcoord + width/2, region_to_search[1]+ ycoord + height/2))
 
     def select_all(self):
+        time.sleep(0.1)
         keyboard.press('control')
         keyboard.press_and_release('a')
         keyboard.release('control')
+        time.sleep(0.2)
 
     def kill_window(self,character_name):
         account_id = self.characters[character_name]

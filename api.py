@@ -12,6 +12,11 @@ from database.sqlite import Database
 from flask_cors import CORS, cross_origin
 import sys
 import json
+import requests
+from bs4 import BeautifulSoup
+import re
+import base64
+from bot_starter import run
 app = flask.Flask(__name__)
 app.config["DEBUG"] = True
 database = Database()
@@ -75,20 +80,109 @@ def check_recived_data(data,valid_accounts,selects):
         return 'No selection was made.'
     return 'OK'
 
+def get_dofus_image(url):
+    headers = {'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_10_1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/39.0.2171.95 Safari/537.36'}
+    result = requests.get(url,headers).content
+    return base64.b64encode(result).decode('utf-8')
+
+def scraping_character_profile(soup, character_info):
+    fullSizeImage_url = soup.select_one('.ak-character-picture > div').get('style').split(')')[0].split('(')[-1]
+    avatarImage_url = soup.select_one('.ak-directories-icon > div').get('style').split(')')[0].split('(')[-1]
+    fullSizeImage = get_dofus_image(fullSizeImage_url)
+    avatarImage = get_dofus_image(avatarImage_url)
+    class_name = soup.select_one('.ak-directories-breed').getText().replace(' ','').replace('\n','')
+    server = soup.select_one('.ak-directories-server-name').getText()
+    character_info.update({
+        'fullSizeImage': fullSizeImage,
+        'avatarImage': avatarImage,
+        'class': class_name,
+        'server': server
+    })
+    level = soup.select_one('.ak-directories-level')
+    if level.select('.ak-omega-level') == []:
+        character_info['level'] = level.getText()
+        level = re.search(r'(\d+)',level.getText()).group()
+        character_info['level'] = level
+    else:
+        character_info['level'] = 200
+    try:
+        professions = soup.select_one('.ak-lists-paginable').select('.ak-content')
+    except:
+         professions = []
+    for profession in professions:
+        # print(profession.select_one('.ak-text').getText())
+        name_prof = profession.select_one('.ak-title > a').getText().replace(' ','').replace('\n','')
+        level_prof = profession.select_one('.ak-text').getText()
+        level_prof = re.search(r'(\d+)',level_prof).group()
+        character_info['professions'].update({name_prof: level_prof})
+
+def scraping_character_characteristics_profile(soup, character_info):
+    list_characteristics_divs  = soup.select('div.ak-container.ak-panel.ak-caracteristics-details > div.ak-panel-content > div.ak-caracteristics-table-container.row')
+    list_characteristics_divs = list_characteristics_divs[:-1]
+    characteristics_map = {
+        'Primary characteristics': 'primaryCharacteristics',
+        'Secondary characteristics': 'secundaryCharacteristics',
+        'Damage': 'damages',
+        'Resistances (%)': 'resistences'
+    }
+    for list_characteristics_div in list_characteristics_divs:
+        tables = list_characteristics_div.select('table')
+        for table in tables:
+            title = table.select_one('thead > tr > th:nth-child(1)')
+            title = title.getText()
+            rows = table.select('tbody > tr')
+            for row in rows:
+                tds = row.select('td')
+                name = tds[1].getText()
+                value = tds[len(tds)-1].getText()
+                character_info[characteristics_map.get(title)][name] = value
+    print(character_info)
+
+
+@cross_origin()
+@app.route('/bot_api/character_info', methods=['GET', 'POST'])
+def get_character_info():
+    result_request = request.get_json(force=True)
+    character_info = {
+        'fullSizeImage': None,
+        'avatarImage': None,
+        'professions': {},
+        'name': result_request.get('character'),
+        'level': None,
+        'server': None,
+        'class': None,
+        'primaryCharacteristics': {},
+        'secundaryCharacteristics': {},
+        'damages': {},
+        'resistences': {}
+    }
+    if result_request.get('login') == '' or result_request.get('password') == '' or result_request.get('character') == '':
+        return 'blank'
+    result_search = requests.get(f"https://www.dofus.com/en/mmorpg/community/directories/character-pages?text={result_request['character']}&character_homeserv%5B%5D={result_request['server']}&character_level_min=0&character_level_max=2340#jt_list")
+    search_soup = BeautifulSoup(result_search.text)
+    names_founded = search_soup.select('.ak-responsivetable > tbody > tr > td:nth-child(2) > a')
+    character_url = None
+    for character in names_founded:
+        if character.getText() == result_request.get('character'):
+            character_url = f"https://www.dofus.com{character.get('href')}"
+            break
+    if character_url == None:
+        return '    '
+    result_character_page = requests.get(character_url)
+    character_page_soup = BeautifulSoup(result_character_page.text)
+    scraping_character_profile(character_page_soup , character_info)
+    result_character_page = requests.get(f'{character_url}/characteristics')
+    character_page_soup = BeautifulSoup(result_character_page.text)
+    scraping_character_characteristics_profile(character_page_soup , character_info)
+    return character_info
+
+
+
 @app.route('/bot_api/selected_data', methods=['GET', 'POST'])
 def get_selected_data():
     result_request = request.get_json(force=True)
-    valid_accounts = []
-    selects = []
-    result = check_recived_data(
-        data=result_request,
-        valid_accounts=valid_accounts,
-        selects=selects
-    )
-    arg_to_pass = {"accounts": valid_accounts, "selects": selects, "mode": result_request['mode']}
-    if result == 'OK':
-        json_str = json.dumps(arg_to_pass).replace('"', '?').replace(' ', '')
-        os.system(f"python {root_path}{os.sep}bot_starter.py {json_str}")
-    return result
+    print(result_request)
+    run(result_request)
+    return 'a'
 
 app.run()

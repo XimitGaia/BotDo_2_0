@@ -251,8 +251,6 @@ class Screen:
                 win32gui.SetForegroundWindow(i[0])
 
 
-
-
 if __name__ == "__main__":
     screen = Screen()
     points = screen.fight_bottom_region
