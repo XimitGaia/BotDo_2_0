@@ -19,7 +19,7 @@ class State:
     def set_state(self, key, value):
         if self.debug:
             print(f'set_state -> value: {value}, key: {key}')
-        self.queue.insert(0, {'value': value, 'key': key})
+        self.queue.append({'value': value, 'key': key})
 
     def pause_resume_state(self, pause_resume: str):
         if pause_resume == 'pause' and self.get('status') != 'paused':
@@ -48,7 +48,7 @@ class State:
                     time.sleep(1)
             print(f'is_busy: {self.is_bussy}')
             if len(self.queue) > 0:
-                to_exec = self.queue.pop()
+                to_exec = self.queue.pop(0)
                 if self.debug:
                     print(f'to_exec -> {to_exec}')
                 if not self.is_bussy:

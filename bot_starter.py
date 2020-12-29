@@ -5,7 +5,6 @@ from pathlib import Path
 path = Path(__file__).resolve()
 sys.path.append(str(path.parents[0]))
 
-
 # Import system
 from src.tools.replace_files import replace_files
 from database.sqlite import Database
@@ -15,6 +14,7 @@ from src.resolver import Resolver
 from src.screen import Screen
 from src.character import Character
 from src.observers import Observers
+from src.orchestrator import Orchestrator
 from src.login import Login
 import time
 import json
@@ -27,7 +27,7 @@ import pyautogui
 
 def run(api_data):
     accounts_meta_data = api_data['accounts']
-    accounts = list()
+    accounts = dict()
     mode = api_data['mode']
     selects = api_data['selects']
     print(accounts_meta_data)
@@ -44,17 +44,18 @@ def run(api_data):
     print('Initialize Screen module')
     screen = Screen()
     print('Initialize State module')
-    state = dict({'status': 'initializing', 'threads_status':{}})
+    state = dict({'status': 'initializing', 'threads_status':{}, 'turn_off': None})
     state = State(state=state, debug=debug)
     print('Initialize Observers')
-    Observers.pause_trigger_observer(state=state, debug=debug)
-    Observers.battle_observer(screen=screen, state=state, debug=debug)
+    # Observers.pause_trigger_observer(state=state, debug=debug)
+    # Observers.battle_observer(screen=screen, state=state, debug=debug)
     print('Loading Accounts')
-    login = Login(accounts_meta_data,screen.screen_size)
-    login.run()
     for account in accounts_meta_data:
-        accounts.append(Character(
+        accounts[account.get('name')] = Character(
             state=state,
             screen=screen,
             account=account
-        ))
+        )
+    goal_generator = Resource(database=database, resources=selects) if mode == 'resources' else None
+    goal = goal_generator.run()
+    orchestrator = Orchestrator(accounts=accounts, state=state)

@@ -22,7 +22,7 @@ class Character:
         screen: Screen,
         account: dict
     ):
-        self.state = state
+        self.shared_state = state
         self.screen = screen
         self.name = None
         self.login = None
@@ -34,7 +34,23 @@ class Character:
         self.secundary_status = dict()
         self.damage_status = dict()
         self.skills = dict()
+        self.queue = list()
         self.load_metadata(account)
+        self.queue.append(self.login_dofus)
+        self.queue.append(self.login1)
+
+    def run_function(self):
+        if len(self.queue) > 0:
+            job = self.queue.pop(0)
+            if job:
+                job()
+        self.shared_state.set_state(key='turn_off', value='free')
+
+    def login_dofus(self):
+        print(self.name, 'lalala')
+
+    def login1(self):
+        print(self.name, 'lolololo')
 
     def load_metadata(self, account: dict):
         self.load_damages(account.get('damage'))
@@ -45,6 +61,7 @@ class Character:
         self.password = account.get('password')
         self.load_primary_status(account.get('primaryCharacteristics'))
         self.load_resistances(account.get('resistences'))
+        self.load_secundary_status(account.get('secundaryCharacteristics'))
 
     def load_damages(self, damage: dict):
         dict_damages = {
@@ -83,11 +100,27 @@ class Character:
             for item in resistances:
                 self.res_status[dict_resistances.get(item)] = resistances.get(item)
 
+    def load_primary_status(self, primary_status: dict):
+        if primary_status:
+            for item in primary_status:
+                self.primary_status[item.lower()] = primary_status.get(item)
 
-    def load_primary_status(self, primary_status:dict):
-        if resistances:
-            for item in resistances:
-                self.primary_status[item.lower()] = resistances.get(item)
+    def load_secundary_status(self, secundary_status: dict):
+        dict_secundary_status = {
+            "AP Parry": "ap_parry",
+            "AP Reduction": "ap_reduction",
+            "Dodge": "dodge",
+            "Heals": "heals",
+            "Initiative": "initiative",
+            "Lock": "lock",
+            "MP Parry": "mp_parry",
+            "MP Reduction": "mp_reduction",
+            "Prospecting": "prospecting",
+            "Summons": "summons"
+        }
+        if secundary_status:
+            for item in secundary_status:
+                self.secundary_status[dict_secundary_status.get(item)] = secundary_status.get(item)
 
 
 

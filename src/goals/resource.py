@@ -13,45 +13,25 @@ import copy
 
 class Resource:
 
-    def __init__(self, database: Database):
+    def __init__(self, database: Database, resources: list):
         self.database = database
         self.option = None
-        self.resources = self.resource_menu()
+        self.resources = self.resource_resolver(resources)
         self.resources_location = None
         self.level = 200
         self.distance = 2 # max distances between groups
-        print(self.run())
 
-
-    def resource_menu(self):
-        os.system('cls' if os.name == 'nt' else 'clear')
-        print('SELECT ONE OF THE OPTIONS')
-        print('1 - Up job')
-        print('2 - get resources')
-        option = int(input("Select what you want: "))
-        if option == 1:
-            self.option = 1
-            os.system('cls' if os.name == 'nt' else 'clear')
-            jobs = self.database.get_jobs()
-            for job in jobs:
-                print(f'{job[0]} - {job[1]}')
-            print('SELECT ONE OF THE OPTIONS')
-            id = int(input("Select what you want: "))
-            result = self.database.get_resources_by_job_id(id)
-            resource_list = list()
+    def resource_resolver(self, resources: list):
+        resource_list = list()
+        for resource in resources:
+            result = self.database.get_resource_by_name_or_id(resource.get('value'))
             for item in result:
                 resource_list.append({
                     'id': item[0],
                     'level': item[2],
                     'name': item[1]
                 })
-        if option == 2:
-            self.option = 2
-            resource_list = list()
-            self.add_resources_to_collect(resource_list)
-        print(resource_list)
         return resource_list
-
 
     def search_resource(self, resource):
         data = self.database.get_resource_by_name_or_id(resource)
@@ -130,14 +110,14 @@ class Resource:
         #     input()
         if has_t:
             nb_pivo_t = (-1, pivo[1], pivo[2]+1)
-            position_t, positions = self.filter_positions(nb_pivo_t, positions) 
-        if has_q:       
+            position_t, positions = self.filter_positions(nb_pivo_t, positions)
+        if has_q:
             nb_pivo_q = (-1, pivo[1]-1, pivo[2])
             position_q, positions = self.filter_positions(nb_pivo_q, positions)
-        if has_x: 
+        if has_x:
             nb_pivo_x = (-1, pivo[1], pivo[2]-1)
             position_x, positions = self.filter_positions(nb_pivo_x, positions)
-        if has_b: 
+        if has_b:
             nb_pivo_b = (-1, pivo[1]+1, pivo[2])
             position_b, positions = self.filter_positions(nb_pivo_b, positions)
 
@@ -180,7 +160,7 @@ class Resource:
 
 
     def filter_positions(self, position_to_search: tuple, positions: list):
-        results = [ position for position in positions if position[1] == position_to_search[1] and position[2] == position_to_search[2] ]  
+        results = [ position for position in positions if position[1] == position_to_search[1] and position[2] == position_to_search[2] ]
         for result in results:
             positions.pop(positions.index(result))
         if len(results) > 0:
@@ -207,7 +187,7 @@ class Resource:
         group_index = 0
         comparation_list = list()
         for group_quantitie in groups_info:
-            comparation_list.append([group_index, group_quantitie , 0]) 
+            comparation_list.append([group_index, group_quantitie , 0])
             group_index += 1
         return comparation_list
 
@@ -252,7 +232,7 @@ class Resource:
             if 'density' in groups_index[index]:
                 groups_index[index].remove('density')
         return groups_index
-            
+
 
     def run(self):
         positions, resources_ids = self.get_resources_location()
