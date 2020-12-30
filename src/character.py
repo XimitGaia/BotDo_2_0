@@ -10,6 +10,7 @@ root_path = str(path.parents[1])
 from bs4 import BeautifulSoup
 from src.state.state import State
 from src.screen import Screen
+from src.login import Login
 import requests
 import time
 
@@ -27,6 +28,7 @@ class Character:
         self.name = None
         self.login = None
         self.password = None
+        self.window_id = None
         self.level = None
         self.class_name = None
         self.primary_status = dict()
@@ -37,7 +39,6 @@ class Character:
         self.queue = list()
         self.load_metadata(account)
         self.queue.append(self.login_dofus)
-        self.queue.append(self.login1)
 
     def run_function(self):
         if len(self.queue) > 0:
@@ -47,10 +48,17 @@ class Character:
         self.shared_state.set_state(key='turn_off', value='free')
 
     def login_dofus(self):
-        print(self.name, 'lalala')
+        login = Login(screen_size=self.screen.screen_size)
+        self.window_id = login.run(
+            accounts=[{
+                'login': self.login,
+                'password': self.password,
+                'name': self.name
+            }]
+        )[0]
 
-    def login1(self):
-        print(self.name, 'lolololo')
+    def check_health(self):
+        print('dwdwdwdw')
 
     def load_metadata(self, account: dict):
         self.load_damages(account.get('damage'))

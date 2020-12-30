@@ -15,7 +15,6 @@ from src.screen import Screen
 from src.character import Character
 from src.observers import Observers
 from src.orchestrator import Orchestrator
-from src.login import Login
 import time
 import json
 import pyautogui

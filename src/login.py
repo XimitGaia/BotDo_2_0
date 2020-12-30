@@ -17,6 +17,7 @@ import pyautogui
 import pytesseract
 from pytesseract import Output
 from PIL import ImageGrab
+import re
 
 
 
@@ -29,12 +30,10 @@ from PIL import ImageGrab
 # win32gui.SetForegroundWindow(window[0])
 class Login:
 
-    def __init__(self, accounts, screen_size):
+    def __init__(self, screen_size):
         self.screen_size = screen_size
-        self.accounts = accounts
         self.search = Search()
         self.characters = dict()
-        self.number_of_accounts = len(self.accounts)
         self.dofus_applications_ids = list()
 
 
@@ -48,17 +47,16 @@ class Login:
 
 
     def get_dofus_windows_handle(self):
-        def windowEnumerationHandler(hwnd, top_windows):
+        def windowEnumerationHandler(hwnd, all_windows):
             all_windows.append((hwnd, win32gui.GetWindowText(hwnd)))
         all_windows = list()
         win32gui.EnumWindows(windowEnumerationHandler, all_windows)
         for window in all_windows:
-            if "dofus" in window[1].lower():
-                if "bot" in window[1].lower():
-                    continue
+            if re.search(r'(^D?d?ofus \d+?.?\d+)',window[1]):
                 self.dofus_applications_ids.append(window[0])
 
     def login(self,account):
+        self.dofus_applications_ids
         account_id = self.dofus_applications_ids.pop()
         self.characters.update({account['name']: account_id})
         pyautogui.press('alt')
@@ -79,7 +77,10 @@ class Login:
         keyboard.write(account['password'])
         keyboard.press_and_release('enter')
         time.sleep(1)
-        self.select_character(account['name'],account_id)
+        self.select_character(
+            character_name=account['name'],
+            account_id=account_id
+            )
 
     def select_character(self, character_name, account_id):
         region_to_search = (self.screen_size[0] * 0.20863836017, self.screen_size[1] * 0.39322916667,self.screen_size[0] * 0.4450951683748,self.screen_size[1] * 0.825520833333334)
@@ -140,12 +141,14 @@ class Login:
                 login = self.get_position_of_login_and_password(self.search.search_color(RGB=(0,255,255),region=(region)))
                 return login, password
 
-    def run(self):
-        self.open_new_dofus_window(self.number_of_accounts)
+    def run(self, accounts):
+        self.open_new_dofus_window(len(accounts))
+        time.sleep(8)
         self.get_dofus_windows_handle()
-        for account in self.accounts:
+        for account in accounts:
             self.login(account)
-        return self.characters
+        time.sleep(2)
+        return [self.characters[item] for item in self.characters]
 
 if __name__ == "__main__":
     # def windowEnumerationHandler(hwnd, top_windows):
