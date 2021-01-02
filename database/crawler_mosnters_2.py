@@ -8,7 +8,7 @@ def get_monsters_id_lists():
     boss_id_list = list()
     mini_boss_id_list = list()
     monster_id_list = list()
-    url = f'https://dofensive.com/api/monsterPreview.php?Language=en'
+    url = 'https://dofensive.com/api/monsterPreview.php?Language=en'
     result = requests.get(url)
     if result.status_code == 200:
         data = result.json()

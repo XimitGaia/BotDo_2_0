@@ -35,6 +35,7 @@ class Screen:
         self.fight_buttom_region = None
         self.get_fight_buttom_region()
         self.chat_input = None
+        self.search = Search()
 
 
 
@@ -55,11 +56,6 @@ class Screen:
             round(X+width),
             round(0+high)
         )
-
-    def get_chat_input(self):
-        region = self.get_marked_area_or_points(screen=self.bottom_region,marker_number=2,marker='chat_input_marker')
-        central_point = ((region[0]+region[2])/2 , (region[1]+region[3])/2)
-        self.chat_input = central_point
 
     def get_bottom_region(self):
         self.bottom_region = (
@@ -232,29 +228,48 @@ class Screen:
 #  #+#    #+#    #+#     #+#    #+# #+#        #+#    #+# #+#    #+#
 #  ########     ###     ###    ### ########## ###    ###  ########
 
-    # bring_character_to_front
-    def window_enum_handler(self,hwnd, resultList):
-        if win32gui.IsWindowVisible(hwnd) and win32gui.GetWindowText(hwnd) != '':
-            resultList.append((hwnd, win32gui.GetWindowText(hwnd)))
+    def get_my_bag_type(self):
+        width_constant = 0.195426195426195
+        height_constant = 0.0982404692082
+        ocr_config = '--psm 6 --oem 3'
+        screen_image = ImageGrab.grab((
+            0,
+            0,
+            width_constant * (self.game_active_screen[2] - self.game_active_screen[0]),
+            height_constant * (self.game_active_screen[3] - self.game_active_screen[1])
+        ))
+        text = pytesseract.image_to_string(screen_image, config=ocr_config)
+        if text.split(' ')[0].strip() == 'Kerub':
+            return 'kerub'
+        else:
+            return 'amakna'
 
-    def get_app_list(self,handles=[]):
-        mlst=[]
-        win32gui.EnumWindows(self.window_enum_handler, handles)
-        for handle in handles:
-            mlst.append(handle)
-        return mlst
+    def find_zaap_search_position(self):
+        result = self.search.search_color(RGB=(0, 255, 255), region=(self.game_active_screen))
+        result_width = max(result, key=lambda x: x[0])[0] - min(result, key=lambda x: x[0])[0]
+        result_heigh = max(result, key=lambda x: x[1])[1] - min(result, key=lambda x: x[1])[1]
+        xcoord = min(result, key=lambda x: x[0])[0] + 2.5 * result_width
+        ycoord = min(result, key=lambda x: x[1])[1] + result_heigh/2
+        return (xcoord, ycoord)
 
-    def bring_character_to_front(self, name:str):
-        appwindows = self.get_app_list()
-        for i in appwindows:
-            if name in i[1].lower():
-                win32gui.SetForegroundWindow(i[0])
+    def has_zaap_marker(self):
+        result = self.search.search_color(RGB=(255, 0, 255), region=(self.game_active_screen))
+        if result != []:
+            return True
+        return False
 
+    def bring_character_to_front(self, character_window_number:int):
+        win32gui.SetForegroundWindow(character_window_number)
+
+    def get_chat_content(self,chat_position):
+        chat_image = ImageGrab.grab(chat_position)
+        ocr_config = '--psm 6 --oem 3'
+        text = pytesseract.image_to_string(chat_image, config=ocr_config)
+        return text
 
 if __name__ == "__main__":
     screen = Screen()
-    points = screen.fight_bottom_region
-    time.sleep(1)
-    pyautogui.moveTo((points[0],points[1]))
-    time.sleep(1)
-    pyautogui.moveTo((points[2],points[3]))
+    points = screen.game_active_screen
+    print(points)
+    print(screen.get_my_bag_type())
+

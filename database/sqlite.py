@@ -146,6 +146,17 @@ class Database:
                 )
                 """,
                 'with_index': False
+            },
+            'zaaps': {
+                'temp': False,
+                'sql': """
+                CREATE TABLE *table*(
+                    name TEXT UNIQUE,
+                    x INTEGER,
+                    y INTEGER
+                )
+                """,
+                'with_index': False
             }
         }
         for table in tables:
@@ -216,7 +227,10 @@ class Database:
         cursosr.execute("""INSERT OR IGNORE INTO barrers(x,y,top, left, down, right, world_list_zone_id) values(?,?,?,?,?,?,?);""",row)
         self.connection.commit()
 
-
+    def insert_zaaps(self, row: tuple):
+        cursosr = self.connection.cursor()
+        cursosr.execute("""INSERT OR IGNORE INTO zaaps(name, x, y) values(?,?,?);""",row)
+        self.connection.commit()
 
 
     #   :+:     :+:   :+: :+:   :+:       :+:    :+: :+:       :+:    :+:
@@ -232,6 +246,7 @@ class Database:
         self.insert_values_jobs_2020_11_02()
         self.insert_values_images_2020_11_02()
         self.insert_value_resources_20_11_02()
+        self.insert_values_zaaps_2021_01_01()
 
     def insert_values_executor(self, callback, values_list: list):
         for values in values_list:
@@ -358,6 +373,50 @@ class Database:
         ]
         self.insert_values_executor(callback=self.insert_job_resources_list, values_list=values_list)
 
+    def insert_values_zaaps_2021_01_01(self):
+        values_list = [
+            ("Amakna Castle", 3, -5),
+            ("Amakna Village", -2, 0),
+            ("Crackler Mountain", -5, -8),
+            ("Edge of the Evil Forest", -1, 13),
+            ("Gobball Corner", 5, 7),
+            ("Madrestam Harbour", 7, -4),
+            ("Scaraleaf Plain", -1, 24),
+            ("Crocuzko", -83, -15),
+            ("Astrub City", 5, -18),
+            ("Bonta", -32, -56),
+            ("Brakmar", -26, 35),
+            ("Cania Lake", -3, -42),
+            ("Cania Massif", -13, -28),
+            ("Imp Village", -16, -24),
+            ("Kanig Village", 0, -56),
+            ("Lousy Pig Plain", -5, -23),
+            ("Rocky Plains", -17, -47),
+            ("Rocky Roads", -20, -20),
+            ("The Cania Fields", -27, -36),
+            ("Arch of Vili", 15, -20),
+            ("Dopple Village", -34, -8),
+            ("Entrance to Harebourg's Castle", -67, -75),
+            ("Frigost Village", -78, -41),
+            ("The Snowbound Village", -77, -73),
+            ("Breeder Village", -16, 1),
+            ("Turtle Beach", 35, 12),
+            ("Dunes of Bones", 15, -58),
+            ("Canopy Village", -54, 16),
+            ("Coastal Village", -46, 18),
+            ("Pandala Village", 20, -29),
+            ("Caravan Alley", -25, 12),
+            ("Desecrated Highlands", -15, 25),
+            ("Alliance Temple", 13, 35),
+            ("Sufokia", 13, 26),
+            ("Sufokian Shoreline", 10, 22),
+            ("The Cradle", 1, -32),
+            ("Abandoned Labowatowies", 27, -14),
+            ("Cawwot Island", 25, -4),
+            ("Zoth Village", -53, 18)
+        ]
+        self.insert_values_executor(callback=self.insert_zaaps, values_list=values_list)
+
 
 
 
@@ -425,11 +484,17 @@ class Database:
         """
         return self.query(sql)
 
+    def get_zaaps(self):
+        sql = f"""
+            SELECT * FROM zaaps
+        """
+        return self.query(sql)
+
 
 if __name__ == '__main__':
     database = Database()
     sql = f"""SELECT * FROM monsters"""
-    print(database.query(sql))
+    print(database.get_zaaps())
     # # sql = f"""SELECT * FROM monsters"""
     # # print(database.query(sql))
     # sql = f"""SELECT * FROM job_resources_locationa"""

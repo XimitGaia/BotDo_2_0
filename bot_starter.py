@@ -53,7 +53,8 @@ def run(api_data):
         accounts[account.get('name')] = Character(
             state=state,
             screen=screen,
-            account=account
+            account=account,
+            database=database
         )
     goal_generator = Resource(database=database, resources=selects) if mode == 'resources' else None
     goal = goal_generator.run()
