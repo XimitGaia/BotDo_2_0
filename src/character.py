@@ -13,6 +13,7 @@ from src.screen import Screen
 from database.sqlite import Database
 from src.chat import Chat
 from src.login import Login
+from src.moving import Moving
 import requests
 import time
 import re
@@ -47,6 +48,7 @@ class Character:
         self.skills = dict()
         self.queue = list()
         self.load_metadata(account)
+        self.moving = Moving(self.database)
         self.chat = Chat(screen=self.screen, character_name=self.name)
         self.chat_comands_map = {
             'hp': {
@@ -61,6 +63,7 @@ class Character:
             }
         }
         self.add_init_functions_on_queue()
+
 
     def run_function(self):
         if len(self.queue) > 0:

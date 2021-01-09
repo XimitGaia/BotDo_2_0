@@ -16,6 +16,7 @@ sub_areas = json.load(open(f'{local_base_path}{os.sep}SubAreas.json'))
 
 bounds = []
 valid_positions = []
+analised_bounds = []
 def get_continents_external_info():
     url = f'https://dofus-map.com/js/main.js?40'
     result = requests.get(url)
@@ -66,8 +67,9 @@ def generate_continents_external_bounds():
                     T = 1
                 else:
                     T = 0
-                bounds.append((int(xcoord),int(ycoord), T, Q, X, B, 1))
-                # bounds.append((int(xcoord),int(ycoord)))
+                if (int(xcoord),int(ycoord)) not in analised_bounds:
+                    bounds.append((int(xcoord),int(ycoord), T, Q, X, B, 1))
+                #bounds.append((int(xcoord),int(ycoord)))
 
 
 def get_continents_internal_bounds():
@@ -78,36 +80,42 @@ def get_continents_internal_bounds():
                 #if map_geral_info["worldMap"] == 1:
                 xcoord = map_geral_info["posX"]
                 ycoord = map_geral_info["posY"]
-                T = int(map_direction_info["topExists"])
-                Q = int(map_direction_info["leftExists"])
-                X = int(map_direction_info["bottomExists"])
-                B = int(map_direction_info["rightExists"])
+                T = int(not map_direction_info["topExists"])
+                Q = int(not map_direction_info["leftExists"])
+                X = int(not map_direction_info["bottomExists"])
+                B = int(not map_direction_info["rightExists"])
                 # print(T,Q,X,B)
                 #print(type(xcoord),type(ycoord))
-                bounds.append((xcoord, ycoord, T, Q, X, B, 1))
+                bounds.append((xcoord, ycoord, T, Q, X, B, map_geral_info["worldMap"]))
+                analised_bounds.append((xcoord, ycoord))
+                if (xcoord, ycoord) == (-25,-50):
+                    print('a')
                 # if ((T,Q,X,B)) != (0,0,0,0):
                 #     if ((T,Q,X,B)) != (1,0,0,1):
                 #         if ((T,Q,X,B)) != (0,1,1,0):
                 #             bounds.append((xcoord, ycoord))
                 break
 
-generate_continents_external_bounds()
-get_continents_internal_bounds()
-print(bounds)
-database = Database()
-for row in bounds:
-    database.insert_barrers(row = row)
+#DO NOT CHANGE CALLIGN ORDER
+def get_all_borders():
+    #get_continents_internal_bounds()
+    generate_continents_external_bounds()
+get_all_borders()
+#print(bounds)
+# database = Database()
+# for row in bounds:
+#     database.insert_barrers(row = row)
 
 
 
 
 
-    # a = Image.open("C:\\Users\\Lucas\\Desktop\\Untitled2.png")
-    # pixel_a = a.load()
-    # for i in range(a.size[0]):
-    #     for j in range(a.size[1]):
-    #         x = i- 94
-    #         y = j -95
-    #         if (x, y) in bounds:
-    #             pixel_a[i*2,j] = (0,0,0)
-#a.show()
+# a = Image.open(r"C:\Users\Lucas\Desktop\Untitled2.png")
+# pixel_a = a.load()
+# for i in range(a.size[0]):
+#     for j in range(a.size[1]):
+#         x = i- 99
+#         y = j -95
+#         if (x, y) in bounds:
+#             pixel_a[i,j] = (0,0,0)
+# a.show()

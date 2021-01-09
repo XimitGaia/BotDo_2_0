@@ -476,11 +476,12 @@ class Database:
         """
         return self.query(sql)
 
-    def get_barrer(self, x, y):
+    def get_barrer(self, x, y, world_list_zone):
         sql = f"""
             SELECT * FROM barrers
             WHERE x = {x} and
-            y = {y};
+            y = {y}
+            and world_list_zone_id = {world_list_zone};
         """
         return self.query(sql)
 
@@ -494,7 +495,7 @@ class Database:
 if __name__ == '__main__':
     database = Database()
     sql = f"""SELECT * FROM monsters"""
-    print(database.get_zaaps())
+    print(database.get_barrer(2,57,1))
     # # sql = f"""SELECT * FROM monsters"""
     # # print(database.query(sql))
     # sql = f"""SELECT * FROM job_resources_locationa"""
