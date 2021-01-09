@@ -121,16 +121,9 @@ class Moving:
     #     pos_list()
 
 
-<<<<<<< Updated upstream
-s = Screen()
-d = Database()
-m = Moving(s,d)
-time.sleep(1)
-print(m.djikstra((-32,-50),(-32,-48)))
-=======
 # s = Screen()
 # d = Database()
 # m = Moving(s,d)
 # time.sleep(1)
 # print(m.djikstra((-32,-50),(-32,-48)))
->>>>>>> Stashed changes
+
