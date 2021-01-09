@@ -48,7 +48,7 @@ class Character:
         self.skills = dict()
         self.queue = list()
         self.load_metadata(account)
-        self.moving = Moving(self.database)
+        self.moving = Moving(self.screen, self.database)
         self.chat = Chat(screen=self.screen, character_name=self.name)
         self.chat_comands_map = {
             'hp': {

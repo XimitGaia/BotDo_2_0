@@ -85,7 +85,7 @@ class Resource:
 
 
     def get_neighborhood(self, pivo: tuple, positions: list, group: list, level: int = 0):
-        barrer = self.database.get_barrer(pivo[1], pivo[2])
+        barrer = self.database.get_barrer(pivo[1], pivo[2], 1)
         # if (pivo[1] == -12 and pivo[2] == 2) or (pivo[1] == -11 and pivo[2] == 2):
         #     print(barrer)
         #     print(group)
