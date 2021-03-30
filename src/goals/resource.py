@@ -8,18 +8,28 @@ from database.sqlite import Database
 import numpy as np
 import copy
 
+from src.goals.goal import Goal
+from src.scheduler.actions.move_action import MoveAction
+from src.scheduler.actions.harvest_action import HarvestAction
+from src.scheduler.actions.action_interface import ActionInterface
 
 
+class Resource(Goal):
 
-class Resource:
-
-    def __init__(self, database: Database, resources: list):
+    def __init__(self, database: Database, resources: list, account_number: int):
         self.database = database
         self.option = None
+        self.account_number = account_number
         self.resources = self.resource_resolver(resources)
         self.resources_location = None
         self.level = 200
         self.distance = 2 # max distances between groups
+        self.best_groups = None
+        self.character_routine = dict()
+        self.routine = []
+        self.set_positions_to_go()
+        self.routine_type_by_id = dict()
+        self.scheduler_characters_routine()
 
     def resource_resolver(self, resources: list):
         resource_list = list()
@@ -44,7 +54,6 @@ class Resource:
             }
         return None
 
-
     def add_resources_to_collect(self, resouces: list):
         os.system('cls' if os.name == 'nt' else 'clear')
         names = list()
@@ -61,7 +70,6 @@ class Resource:
             resouces.append(result)
             self.add_resources_to_collect(resouces)
 
-
     def get_resources_location(self):
         resources_ids = list()
         for resource in self.resources:
@@ -69,7 +77,6 @@ class Resource:
                 resources_ids.append(str(resource['id']))
         positions = self.database.get_resources_location(resources_ids)
         return positions, [int(id) for id in resources_ids]
-
 
     def get_grouped_location(self, positions: list):
         groups = list()
@@ -82,7 +89,6 @@ class Resource:
             if len(positions) == 0:
                 break
         return groups
-
 
     def get_neighborhood(self, pivo: tuple, positions: list, group: list, level: int = 0):
         barrer = self.database.get_barrer(pivo[1], pivo[2], 1)
@@ -151,13 +157,11 @@ class Resource:
                 group, positions = self.get_neighborhood(nb_pivo_b, positions, group, level_b)
         return group, positions
 
-
     def add_in_group(self, group: list, items: list):
         new_goup = copy.deepcopy(group)
         for item in items:
             new_goup.append(item)
         return new_goup
-
 
     def filter_positions(self, position_to_search: tuple, positions: list):
         results = [ position for position in positions if position[1] == position_to_search[1] and position[2] == position_to_search[2] ]
@@ -167,8 +171,7 @@ class Resource:
             return results, positions
         return None, positions
 
-
-    def get_groups_quantities(self, groups: list)-> list:
+    def get_groups_quantities(self, groups: list) -> list:
         groups_info = []
         self.cells_in_groups = []
         for group in groups:
@@ -191,8 +194,7 @@ class Resource:
             group_index += 1
         return comparation_list
 
-
-    def check_ids_in_groups(self, resources_ids:list, comparation_list:list ,groups_index: list):
+    def check_ids_in_groups(self, resources_ids: list, comparation_list: list, groups_index: list):
         ids_not_in_group = []
         for id in resources_ids:
             if id not in comparation_list[0][1]:
@@ -209,32 +211,31 @@ class Resource:
                 groups_index=groups_index
             )
 
-
-    def chose_best_groups(self,comparation_list:list, resources_ids:list, groups_index:dict = dict())->dict:# checar se todos recursos estao no geupo[0]
+    def chose_best_groups(self, comparation_list: list, resources_ids: list, groups_index: dict = dict()) -> dict: # checar se todos recursos estao no geupo[0]
+        #Rerotna o numero de personagens para cada grupo.
+        #separar recursivamente os grupos pra cada personagem, tira o atribuido e roda dnv pro proximo
         comparation_list = comparation_list
         groups_index = groups_index
         for id in resources_ids:
             itens_to_sort = [group for group in comparation_list if id in group[1]]
-            itens_to_sort.sort(key = lambda x: x[1][id])
+            itens_to_sort.sort(key=lambda x: x[1][id])
             score = abs(len(itens_to_sort) - len(comparation_list))
             for item in itens_to_sort:
                 comparation_list[comparation_list.index(item)][2] += score
                 score += 1
         comparation_list.sort(key=lambda x: x[2])
         comparation_list = comparation_list[::-1]
-        #print(comparation_list)
         self.check_ids_in_groups(
-        resources_ids=resources_ids,
-        comparation_list=comparation_list,
-        groups_index=groups_index
+            resources_ids=resources_ids,
+            comparation_list=comparation_list,
+            groups_index=groups_index
         )
         for index in groups_index:
             if 'density' in groups_index[index]:
                 groups_index[index].remove('density')
         return groups_index
 
-
-    def run(self):
+    def set_positions_to_go(self):
         positions, resources_ids = self.get_resources_location()
         groups = self.get_grouped_location(positions)
         resources_ids.append('density')
@@ -242,11 +243,63 @@ class Resource:
             comparation_list=self.get_groups_quantities(groups),
             resources_ids=resources_ids
         )
-        # print(groups_index)
         itens_to_search = {}
+        resources_ids = list()
         for key in groups_index:
+            resources_ids = list(set(resources_ids) | set(groups_index[key]))
             itens_to_search[str(groups_index[key])] = self.cells_in_groups[key]
-        return itens_to_search
+        self.best_groups = itens_to_search
+        self.resources_ids = resources_ids
+
+    def scheduler_characters_routine(self):
+        self.account_number
+        best_groups_quantity = len(self.best_groups)
+        for i in range(0, self.account_number):
+            self.character_routine[i] = i
+        if self.account_number == best_groups_quantity:
+            for key in self.best_groups:
+                self.routine.append(self.best_groups.get(key))
+        else:
+            all_position = list()
+            for key in self.best_groups:
+                all_position += self.best_groups.get(key)
+            chunk_size = abs(len(all_position)/self.account_number)
+            for i in range(0, self.account_number):
+                if i+1 == self.account_number:
+                    self.routine.append(all_position[chunk_size*i:])
+                    continue
+                self.routine.append(all_position[chunk_size*i:chunk_size])
+
+    def get_next_step(self, character_name: str) -> ActionInterface:
+        character_routine_id = self.get_character_routine_id(character_name=character_name)
+        action = self.get_next_routine_by_id(routine_id=character_routine_id)
+        return action
+
+    def get_next_routine_by_id(self, routine_id: int) -> ActionInterface:
+        routine = self.routine[routine_id]
+        to_return = routine.pop(0)
+        print(to_return)
+        routine.append(to_return)
+        self.routine[routine_id] = routine
+        if self.routine_type_by_id[routine_id] == 'MOVE':
+            self.routine_type_by_id[routine_id] == 'HARVEST'
+            return MoveAction(x=to_return[0], y=to_return[1])
+        else:
+            self.routine_type_by_id[routine_id] == 'MOVE'
+            return HarvestAction(items=self.resources)
+
+    def get_character_routine_id(self, character_name: str) -> int:
+        if not self.character_routine.get(character_name):
+            key_to_update = None
+            for key, value in self.character_routine.items():
+                if key == value:
+                    key_to_update = key
+                    break
+            self.character_routine.pop(key_to_update)
+            self.character_routine[character_name] = key_to_update
+            self.routine_type_by_id[key_to_update] = 'MOVE'
+        return self.character_routine.get(character_name)
+
 
 if __name__ == '__main__':
     database = Database()

@@ -5,7 +5,7 @@ from pathlib import Path
 path = Path(__file__).resolve()
 sys.path.append(str(path.parents[1]))
 
-from src.screen import Screen
+from src.screen_controllers.screen import Screen
 import keyboard
 import time
 import re
@@ -76,7 +76,7 @@ class Chat:
             time.sleep(0.5)
             keyboard.press_and_release('enter')
             time.sleep(0.5)
-        time.sleep(1)
+        time.sleep(1.0)
         result = self.get_chat_content()
         keyboard.press_and_release('esc')
         time.sleep(0.5)

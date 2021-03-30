@@ -21,13 +21,13 @@ class State:
             print(f'set_state -> value: {value}, key: {key}')
         self.queue.append({'value': value, 'key': key})
 
-    def pause_resume_state(self, pause_resume: str):
-        if pause_resume == 'pause' and self.get('status') != 'paused':
-            self.temp_state_store = self.get('status')
-            self._set_state(key='status', value='paused')
-        if pause_resume == 'resume':
-            self._set_state(key='status', value=self.temp_state_store)
-            self.temp_state_store = None
+    def pause(self):
+        self.temp_state_store = self.get('status')
+        self._set_state(key='status', value='paused')
+
+    def resume(self):
+        self._set_state(key='status', value=self.temp_state_store)
+        self.temp_state_store = None
 
     def set_thread_status(self, thread_name, running_or_paused):
         self.state['threads_status'][thread_name] = running_or_paused
@@ -38,15 +38,8 @@ class State:
     def resolve_queue(self):
         self.set_thread_status('resolve_queue_thread', 'runnning')
         while True:
-            if self.get('status') == 'paused':
-                self.set_thread_status('resolve_queue_thread', 'paused')
-                while True:
-                    if self.get('status') != 'paused':
-                        self.set_thread_status('resolve_queue_thread', 'runnning')
-                        break
-                    print(self.get('threads_status'))
-                    time.sleep(1)
-            print(f'is_busy: {self.is_bussy}')
+            self.check_pause_command()
+            # print(f'is_busy: {self.is_bussy}')
             if len(self.queue) > 0:
                 to_exec = self.queue.pop(0)
                 if self.debug:
@@ -55,17 +48,22 @@ class State:
                     self._set_state(key=to_exec['key'], value=to_exec['value'])
                 else:
                     while True:
-                        if self.get('status') == 'paused':
-                            self.set_thread_status('resolve_queue_thread', 'paused')
-                            while True:
-                                if self.get('status') != 'paused':
-                                    break
-                                time.sleep(1)
+                        self.check_pause_command()
                         if not self.is_bussy:
                             self._set_state(key=to_exec['key'], value=to_exec['value'])
                             break
                         time.sleep(1)
             else:
+                time.sleep(1)
+
+    def check_pause_command(self):
+        if self.get('status') == 'paused':
+            self.set_thread_status('resolve_queue_thread', 'paused')
+            while True:
+                if self.get('status') != 'paused':
+                    self.set_thread_status('resolve_queue_thread', 'runnning')
+                    break
+                print(self.get('threads_status'))
                 time.sleep(1)
 
     def _set_state(self, key, value):

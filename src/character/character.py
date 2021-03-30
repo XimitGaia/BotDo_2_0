@@ -9,16 +9,21 @@ root_path = str(path.parents[1])
 # Import system
 from bs4 import BeautifulSoup
 from src.state.state import State
-from src.screen import Screen
+import traceback
+from src.errors.screen_errors import ScreenError
+from src.screen_controllers.screen import Screen
 from database.sqlite import Database
-from src.chat import Chat
-from src.login import Login
-from src.moving import Moving
+from src.screen_controllers.chat import Chat
+from src.character.login import Login
+from src.character.moving import Moving
+from src.errors.character_errors import CharacterCriticalError, RetryError, JobError
 import requests
 import time
 import re
 import keyboard
 import pyautogui
+
+debug = True
 
 class Character:
 
@@ -40,6 +45,7 @@ class Character:
         self.class_name = None
         self.current_hp = None
         self.current_pos = None
+        self.last_pos = None
         self.my_zaaps = dict()
         self.primary_status = dict()
         self.res_status = dict()
@@ -48,9 +54,27 @@ class Character:
         self.skills = dict()
         self.queue = list()
         self.load_metadata(account)
-        self.moving = Moving(self.screen, self.database)
+        self.moving = Moving(self.screen, self.database, self.get_pos)
         self.chat = Chat(screen=self.screen, character_name=self.name)
-        self.chat_comands_map = {
+        self.chat_comands_map = Character.get_chat_comands_map()
+        self.add_init_functions_on_queue()
+
+    def run_function(self):
+        if len(self.queue) > 0:
+            job = self.queue.pop(0)
+            if job.__name__ != 'login_dofus':
+                Screen.bring_character_to_front(self.window_id)
+            time.sleep(0.5)
+            if job:
+                try:
+                    Character.run_function_with_retry(job)
+                except JobError as e:
+                    raise JobError(f'Max atemp of 3 for {self.name} job = {job.__name__}')
+        self.shared_state.set_state(key='turn_of', value='free')
+
+    @staticmethod
+    def get_chat_comands_map():
+        return {
             'hp': {
                 'string': '%hp%',
                 'regex': r'(\d+)',
@@ -62,23 +86,33 @@ class Character:
                 'type': 'tuple'
             }
         }
-        self.add_init_functions_on_queue()
 
+    @staticmethod
+    def run_function_with_retry(job: callable, retry_counter: int = 0):
+        retry_counter += 1
+        if retry_counter > 3:
+            raise JobError('Max atemp of 3')
+        try:
+            job()
+        except RetryError as e:
+            print(f'[JOB] {job.__name__} fail {retry_counter}/3', e)
+            print('###' * 10)
 
-    def run_function(self):
-        if len(self.queue) > 0:
-            job = self.queue.pop(0)
-            if job.__name__ != 'login_dofus':
-                self.screen.bring_character_to_front(self.window_id)
-            time.sleep(0.5)
-            if job:
-                job()
-        self.shared_state.set_state(key='turn_off', value='free')
+    def queue_len(self):
+        return len(self.queue)
+
+    def go_to(self, position: tuple):
+        self.moving.register_path_to_move(start=self.current_pos, destiny=position)
+        self.move()
+
+    def colect(self, items: list):
+        print('COLECT!!!!')
 
     def add_init_functions_on_queue(self):
         self.queue.append(self.login_dofus)
         self.queue.append(self.check_hp_pos)
-        self.queue.append(self.get_zaaps)
+        if not debug:
+            self.queue.append(self.get_zaaps)
 
     def get_check_string(self, property_name: str):
         return self.chat_comands_map.get(property_name).get('string')
@@ -112,16 +146,19 @@ class Character:
             count += 1
         return to_return
 
+    def get_pos(self):
+        result = self.check_list(str_list=['pos'])
+        self.current_pos = result['pos']
+        return self.current_pos
 
 
     #    :::      :::::::: ::::::::::: ::::::::::: ::::::::  ::::    :::  ::::::::
-    #:+: :+:   :+:    :+:    :+:         :+:    :+:    :+: :+:+:   :+: :+:    :+:
-    #+:+   +:+  +:+           +:+         +:+    +:+    +:+ :+:+:+  +:+ +:+
-    #+#++:++#++: +#+           +#+         +#+    +#+    +:+ +#+ +:+ +#+ +#++:++#++
-    #+#+     +#+ +#+           +#+         +#+    +#+    +#+ +#+  +#+#+#        +#+
-    ##+#     #+# #+#    #+#    #+#         #+#    #+#    #+# #+#   #+#+# #+#    #+#
-    ####     ###  ########     ###     ########### ########  ###    ####  ########
-
+    #   :+: :+:   :+:    :+:    :+:         :+:    :+:    :+: :+:+:   :+: :+:    :+:
+    #  +:+   +:+  +:+           +:+         +:+    +:+    +:+ :+:+:+  +:+ +:+
+    # +#++:++#++: +#+           +#+         +#+    +#+    +:+ +#+ +:+ +#+ +#++:++#++
+    # +#+     +#+ +#+           +#+         +#+    +#+    +#+ +#+  +#+#+#        +#+
+    # #+#     #+# #+#    #+#    #+#         #+#    #+#    #+# #+#   #+#+# #+#    #+#
+    # ###     ###  ########     ###     ########### ########  ###    ####  ########
 
 
     def check_hp_pos(self):
@@ -131,14 +168,16 @@ class Character:
         self.current_hp = result['hp']
 
     def login_dofus(self):
-        login = Login(screen_size=self.screen.screen_size)
+        login = Login()
         self.window_id = login.run(
-            accounts=[{
+            account={
                 'login': self.login,
                 'password': self.password,
                 'name': self.name
-            }]
-        )[0]
+            },
+            screen_size=self.screen.screen_size
+        )
+        print(f'Character {self.name} has recived {self.window_id} windows_id')
         time.sleep(12)
 
     def open_close_heavenbag(self):
@@ -147,8 +186,8 @@ class Character:
 
     def get_zaaps(self):
         zaaps = self.database.get_zaaps()
-        bag_type = self.screen.get_my_bag_type()
         self.open_close_heavenbag()
+        bag_type = self.screen.get_my_bag_type()
         if bag_type == 'kerub':
             xconst = 0.158004158004158
             yconst = 0.45601173020527859
@@ -159,7 +198,11 @@ class Character:
         ycoord = self.screen.game_active_screen[3] * yconst
         pyautogui.click((xcoord, ycoord))
         time.sleep(4)
-        search_input_pos = self.screen.find_zaap_search_position()
+        try:
+            search_input_pos = self.screen.find_zaap_search_position()
+        except ScreenError as e:
+            traceback.print_tb(e.__traceback__)
+            raise CharacterCriticalError('You are not premium account!!! 💸')
         pyautogui.click(search_input_pos)
         for zaap in zaaps:
             zaap_name = zaap[0]
@@ -175,18 +218,21 @@ class Character:
             keyboard.press_and_release('delete')
         time.sleep(0.1)
         keyboard.press_and_release('esc')
-        time.sleep(0.1)
+        time.sleep(0.5)
         self.open_close_heavenbag()
 
+    def move(self):
+        has_more_movements = self.moving.execute_movement()
+        if has_more_movements:
+            self.queue.append(self.move)
 
-
-    #:::        ::::::::      :::     :::::::::   ::::::::
-    #:+:       :+:    :+:   :+: :+:   :+:    :+: :+:    :+:
-    #+:+       +:+    +:+  +:+   +:+  +:+    +:+ +:+
-    #+#+       +#+    +:+ +#++:++#++: +#+    +:+ +#++:++#++
-    #+#+       +#+    +#+ +#+     +#+ +#+    +#+        +#+
-    ##+#       #+#    #+# #+#     #+# #+#    #+# #+#    #+#
-    ########### ########  ###     ### #########   ########
+    # :::        ::::::::      :::     :::::::::   ::::::::
+    # :+:       :+:    :+:   :+: :+:   :+:    :+: :+:    :+:
+    # +:+       +:+    +:+  +:+   +:+  +:+    +:+ +:+
+    # +#+       +#+    +:+ +#++:++#++: +#+    +:+ +#++:++#++
+    # +#+       +#+    +#+ +#+     +#+ +#+    +#+        +#+
+    # #+#       #+#    #+# #+#     #+# #+#    #+# #+#    #+#
+    # ########## ########  ###     ### #########   ########
 
 
     def load_metadata(self, account: dict):

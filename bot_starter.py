@@ -10,11 +10,12 @@ from src.tools.replace_files import replace_files
 from database.sqlite import Database
 from src.goals.resource import Resource
 from src.state.state import State
-from src.resolver import Resolver
-from src.screen import Screen
-from src.character import Character
-from src.observers import Observers
-from src.orchestrator import Orchestrator
+from src.scheduler.resolver import Resolver
+from src.screen_controllers.screen import Screen
+from src.character.character import Character
+from src.observers.observers import Observers
+from src.scheduler.orchestrator import Orchestrator
+from src.scheduler.account_and_goal import AccountAndGoal
 import time
 import json
 import pyautogui
@@ -25,15 +26,7 @@ import pyautogui
 # selects = args['selects']
 
 def run(api_data):
-    accounts_meta_data = api_data['accounts']
     accounts = dict()
-    mode = api_data['mode']
-    selects = api_data['selects']
-    print(accounts_meta_data)
-    print()
-    print(mode)
-    print()
-    print(selects)
     debug = 1 #bool(int(input('debug:')))
     print('Initialize database module')
     database = Database()
@@ -43,19 +36,32 @@ def run(api_data):
     print('Initialize Screen module')
     screen = Screen()
     print('Initialize State module')
-    state = dict({'status': 'initializing', 'threads_status':{}, 'turn_off': None})
+    state = dict({'status': 'initializing', 'threads_status':{}, 'turn_of': None})
     state = State(state=state, debug=debug)
     print('Initialize Observers')
     # Observers.pause_trigger_observer(state=state, debug=debug)
     # Observers.battle_observer(screen=screen, state=state, debug=debug)
     print('Loading Accounts')
-    for account in accounts_meta_data:
-        accounts[account.get('name')] = Character(
-            state=state,
-            screen=screen,
-            account=account,
-            database=database
-        )
-    goal_generator = Resource(database=database, resources=selects) if mode == 'resources' else None
-    goal = goal_generator.run()
-    orchestrator = Orchestrator(accounts=accounts, state=state)
+
+    accounts = list()
+    for goal_and_accounts in api_data:
+        # Fron enviara accounts + items para cada account.
+        mode = goal_and_accounts.get('mode')
+        if mode == 'resources':
+            goal = Resource(
+                database=database,
+                resources=goal_and_accounts.get('items'),
+                account_number=len(goal_and_accounts.get("accounts"))
+            )
+        else:
+            goal = None
+        for accoun_data in goal_and_accounts.get("accounts"):
+            account = Character(
+                state=state,
+                screen=screen,
+                account=accoun_data,
+                database=database
+            )
+            accounts.append(AccountAndGoal(account, goal))
+
+    Orchestrator(account_and_goals=accounts, state=state)

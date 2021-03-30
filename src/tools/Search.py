@@ -29,7 +29,8 @@ class Search:
         if type(screen) == tuple or screen == '':
             screen = ImageGrab.grab(screen)#grab the screen ('' is fullscreen) or (x1,y1,x2,y2)
         else:
-            screen = screen
+            #screen = screen
+            print("False Screen input")
         img = image
         if resize != (0,0):#check if image needs to be resized, and resize if needed
             img.thumbnail(resize, Image.ANTIALIAS)
@@ -116,9 +117,9 @@ class Search:
         screen_size: tuple
     )-> list:#area that the reference point is allowed
         x_top_left,y_top_left = reference_point
-        x_right_down = screen_size[0] - (image_size[0] - x_top_left)
-        y_right_down = screen_size[1] - (image_size[1] - y_top_left)
-        return [(x_top_left,y_top_left),(x_right_down,y_right_down)]
+        x_right_bottom = screen_size[0] - (image_size[0] - x_top_left)
+        y_right_bottom = screen_size[1] - (image_size[1] - y_top_left)
+        return [(x_top_left,y_top_left),(x_right_bottom,y_right_bottom)]
 
     @staticmethod
     def _check_color_renge(
@@ -163,7 +164,10 @@ if __name__ == '__main__':
     # #print(img.size)
     # print(Search.search_image(image=img))
     s = Search()
-    s.search_color(RGB=(255,0,0))
+    img = Image.open(r"C:\Users\Lucas\Desktop\teste.png")
+    a= time.time()
+    print(s.search_image(img))
+    print(time.time()-a)
 
 
 

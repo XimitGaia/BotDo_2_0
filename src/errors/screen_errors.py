@@ -1,0 +1,2 @@
+class ScreenError(Exception):
+    pass

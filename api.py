@@ -159,6 +159,7 @@ def get_character_info():
     if result_request.get('login') == '' or result_request.get('password') == '' or result_request.get('character') == '':
         return 'blank'
     result_search = requests.get(f"https://www.dofus.com/en/mmorpg/community/directories/character-pages?text={result_request['character']}&character_homeserv%5B%5D={result_request['server']}&character_level_min=0&character_level_max=2340#jt_list")
+    # print(result_search,f"https://www.dofus.com/en/mmorpg/community/directories/character-pages?text={result_request['character']}&character_homeserv%5B%5D={result_request['server']}&character_level_min=0&character_level_max=2340#jt_list")
     search_soup = BeautifulSoup(result_search.text)
     names_founded = search_soup.select('.ak-responsivetable > tbody > tr > td:nth-child(2) > a')
     character_url = None
@@ -167,7 +168,7 @@ def get_character_info():
             character_url = f"https://www.dofus.com{character.get('href')}"
             break
     if character_url == None:
-        return '    '
+        return ''
     result_character_page = requests.get(character_url)
     character_page_soup = BeautifulSoup(result_character_page.text)
     scraping_character_profile(character_page_soup , character_info)

@@ -8,6 +8,7 @@ root_path = str(path.parents[1])
 
 # Import system
 from src.tools.search import Search
+from src.errors.screen_errors import ScreenError
 import numpy as np
 from PIL import Image
 from PIL import ImageGrab
@@ -246,6 +247,9 @@ class Screen:
 
     def find_zaap_search_position(self):
         result = self.search.search_color(RGB=(0, 255, 255), region=(self.game_active_screen))
+        print(result)
+        if len(result) < 1:
+            raise ScreenError('Fail to find zaap on screen')
         result_width = max(result, key=lambda x: x[0])[0] - min(result, key=lambda x: x[0])[0]
         result_heigh = max(result, key=lambda x: x[1])[1] - min(result, key=lambda x: x[1])[1]
         xcoord = min(result, key=lambda x: x[0])[0] + 2.5 * result_width
@@ -258,7 +262,19 @@ class Screen:
             return True
         return False
 
-    def bring_character_to_front(self, character_window_number:int):
+    @staticmethod
+    def bring_character_to_front(character_window_number: int):
+        # pyautogui.press('alt')
+        # win32gui.ShowWindow(character_window_number, 5)
+        # print(character_window_number)
+        # def aaaa():
+        #     def windowEnumerationHandler(hwnd, all_windows):
+        #         all_windows.append((hwnd, win32gui.GetWindowText(hwnd)))
+        #     all_windows = list()
+        #     win32gui.EnumWindows(windowEnumerationHandler, all_windows)
+        #     for window in all_windows:
+        #         #print(window)
+        # aaaa()
         win32gui.SetForegroundWindow(character_window_number)
 
     def get_chat_content(self,chat_position):

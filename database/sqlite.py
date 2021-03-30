@@ -140,7 +140,7 @@ class Database:
                     y INTEGER,
                     top INTEGER,
                     left INTEGER,
-                    down INTEGER,
+                    bottom INTEGER,
                     right INTEGER,
                     world_list_zone_id INTEGER
                 )
@@ -224,7 +224,7 @@ class Database:
 
     def insert_barrers(self, row: tuple):
         cursosr = self.connection.cursor()
-        cursosr.execute("""INSERT OR IGNORE INTO barrers(x,y,top, left, down, right, world_list_zone_id) values(?,?,?,?,?,?,?);""",row)
+        cursosr.execute("""INSERT OR IGNORE INTO barrers(x,y,top, left, bottom, right, world_list_zone_id) values(?,?,?,?,?,?,?);""",row)
         self.connection.commit()
 
     def insert_zaaps(self, row: tuple):
@@ -232,6 +232,20 @@ class Database:
         cursosr.execute("""INSERT OR IGNORE INTO zaaps(name, x, y) values(?,?,?);""",row)
         self.connection.commit()
 
+
+
+    # :::    ::: :::::::::  :::::::::      ::: ::::::::::: ::::::::::
+    # :+:    :+: :+:    :+: :+:    :+:   :+: :+:   :+:     :+:
+    # +:+    +:+ +:+    +:+ +:+    +:+  +:+   +:+  +:+     +:+
+    # +#+    +:+ +#++:++#+  +#+    +:+ +#++:++#++: +#+     +#++:++#
+    # +#+    +#+ +#+        +#+    +#+ +#+     +#+ +#+     +#+
+    # #+#    #+# #+#        #+#    #+# #+#     #+# #+#     #+#
+    #  ########  ###        #########  ###     ### ###     ##########
+
+    def update_barrers(self, row: tuple, column_name: str):
+        cursosr = self.connection.cursor()
+        cursosr.execute(f"""UPDATE  barrers set {column_name} = ? where x = ? and y = ? and world_list_zone_id = ?;""", row)
+        self.connection.commit()
 
     #   :+:     :+:   :+: :+:   :+:       :+:    :+: :+:       :+:    :+:
     #  +:+     +:+  +:+   +:+  +:+       +:+    +:+ +:+       +:+

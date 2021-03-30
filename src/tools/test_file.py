@@ -9,7 +9,7 @@ while True:
     if keyboard.is_pressed("enter"):
         pyautogui.click((297,564))
         time.sleep(0.1)
-        pyautogui.press("down")
+        pyautogui.press("bottom")
         time.sleep(0.1)
         pyautogui.click((1050,244))
         time.sleep(0.1)
@@ -70,7 +70,7 @@ while True:
         #         pyautogui.click((800,10))
         #         break
 
-        
+
 
 
 
