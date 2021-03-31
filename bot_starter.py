@@ -37,7 +37,7 @@ def run(api_data):
     screen = Screen()
     print('Initialize State module')
     state = dict({'status': 'initializing', 'threads_status':{}, 'turn_of': None})
-    state = State(state=state, debug=debug)
+    state = State(state=state, debug=False)
     print('Initialize Observers')
     # Observers.pause_trigger_observer(state=state, debug=debug)
     # Observers.battle_observer(screen=screen, state=state, debug=debug)

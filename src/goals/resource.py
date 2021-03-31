@@ -263,33 +263,34 @@ class Resource(Goal):
             all_position = list()
             for key in self.best_groups:
                 all_position += self.best_groups.get(key)
-            chunk_size = abs(len(all_position)/self.account_number)
+            chunk_size = int(len(all_position)/self.account_number)
             for i in range(0, self.account_number):
                 if i+1 == self.account_number:
                     self.routine.append(all_position[chunk_size*i:])
                     continue
                 self.routine.append(all_position[chunk_size*i:chunk_size])
+        print(self.routine)
 
     def get_next_step(self, character_name: str) -> ActionInterface:
         character_routine_id = self.get_character_routine_id(character_name=character_name)
         action = self.get_next_routine_by_id(routine_id=character_routine_id)
+        print(action)
         return action
 
     def get_next_routine_by_id(self, routine_id: int) -> ActionInterface:
-        routine = self.routine[routine_id]
-        to_return = routine.pop(0)
-        print(to_return)
-        routine.append(to_return)
-        self.routine[routine_id] = routine
         if self.routine_type_by_id[routine_id] == 'MOVE':
-            self.routine_type_by_id[routine_id] == 'HARVEST'
+            routine = self.routine[routine_id]
+            to_return = routine.pop(0)
+            routine.append(to_return)
+            self.routine[routine_id] = routine
+            self.routine_type_by_id[routine_id] = 'HARVEST'
             return MoveAction(x=to_return[0], y=to_return[1])
         else:
-            self.routine_type_by_id[routine_id] == 'MOVE'
+            self.routine_type_by_id[routine_id] = 'MOVE'
             return HarvestAction(items=self.resources)
 
     def get_character_routine_id(self, character_name: str) -> int:
-        if not self.character_routine.get(character_name):
+        if self.character_routine.get(character_name) is None:
             key_to_update = None
             for key, value in self.character_routine.items():
                 if key == value:

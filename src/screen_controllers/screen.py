@@ -277,9 +277,13 @@ class Screen:
         # aaaa()
         win32gui.SetForegroundWindow(character_window_number)
 
-    def get_chat_content(self,chat_position):
+    def get_chat_content(self,chat_position, ocr_config_number = 1):
+        ocr_configs = {
+            1: '--psm 6 --oem 3',
+            2: '--psm 7 --oem 3'
+        }
         chat_image = ImageGrab.grab(chat_position)
-        ocr_config = '--psm 6 --oem 3'
+        ocr_config = ocr_configs[ocr_config_number]
         text = pytesseract.image_to_string(chat_image, config=ocr_config)
         return text
 

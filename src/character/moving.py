@@ -64,7 +64,10 @@ class Moving:
         return (xcoord, ycoord)
 
     def get_next_pos(self):
+        position_to_move = None
         self.current_pos = self.get_pos()
+        if self.next_pos is None:
+            self.next_pos = self.current_pos
         if self.next_pos == self.current_pos:
             self.max_attemps_to_move = 0
             position_to_move = self.pop_movement_queue()
@@ -90,20 +93,26 @@ class Moving:
 
     def execute_movement(self) -> bool:
         next_pos = self.get_next_pos()
-        print('next pos:', next_pos)
-        direction = self.get_direction(next_pos)
-        if (self.max_attemps_to_move > 2):
-            row = (
-                0,
-                self.current_pos[0],
-                self.current_pos[1],
-                1
-            )
-            self.database.update_barrers(row=row, column_name=direction)
-            self.register_path_to_move(self.current_pos, self.moving_to)
-            return True
-        self.move_to(direction=direction)
-        return len(self.movement_queue) > 0
+        if next_pos:
+            direction = self.get_direction(next_pos)
+            if (self.max_attemps_to_move > 2):
+                row = (
+                    0,
+                    self.current_pos[0],
+                    self.current_pos[1],
+                    1
+                )
+                self.database.update_barrers(row=row, column_name=direction)
+                self.register_path_to_move(self.current_pos, self.moving_to)
+                return True
+            self.move_to(direction=direction)
+            #escalonar tempo pelos usuarios nao precisa espera se outra conta for jogar
+            time.sleep(5)
+            len_movement_queue = len(self.movement_queue)
+            if len_movement_queue == 0:
+                self.get_pos()
+            return len_movement_queue > 0
+        return False
 
     def get_amakna_allowed_neightborhoods(self, pos):
         result = self.database.get_barrer(pos[0], pos[1], 1)
@@ -154,6 +163,7 @@ class Moving:
         return top, bottom, left, right
 
     def djikstra_path_assembler(self, destiny, djikstra_list):
+        print(f'djikstra_path_assembler {str(destiny)}', djikstra_list, '####')
         djikstra_list = djikstra_list[:-1]
         mounted_path = [destiny]
         while len(djikstra_list) > 1:
@@ -171,7 +181,6 @@ class Moving:
             if right in layer_positions:
                 mounted_path.insert(0, right)
                 continue
-        print(mounted_path)
         return mounted_path
 
     def register_path_to_move(self, start, destiny):
@@ -183,13 +192,9 @@ class Moving:
         self.next_pos = None
 
     def pop_movement_queue(self):
-        return self.movement_queue.pop(0)
-    # def get_nearest_zaap(self, destiny, my_zaaps):
-    #     for zaap in my_zaaps:
+        to_return = self.movement_queue.pop(0)
+        return to_return
 
-    # def amakna_go_to(self, destiny, queue, my_zaaps):
-
-    # def movement_resolver
 
 # s = Screen()
 # d = Database()

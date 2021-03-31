@@ -76,12 +76,12 @@ class Character:
     def get_chat_comands_map():
         return {
             'hp': {
-                'string': '%hp%',
+                'string': '/g %hp%',
                 'regex': r'(\d+)',
                 'type': 'int'
             },
             'pos': {
-                'string': '%pos%',
+                'string': '/g %pos%',
                 'regex': r'(-?\d{1,2})',
                 'type': 'tuple'
             }
@@ -96,14 +96,16 @@ class Character:
             job()
         except RetryError as e:
             print(f'[JOB] {job.__name__} fail {retry_counter}/3', e)
-            print('###' * 10)
+            Character.run_function_with_retry(job, retry_counter)
 
     def queue_len(self):
         return len(self.queue)
 
     def go_to(self, position: tuple):
+        print(f'Moving to {str(position)}')
         self.moving.register_path_to_move(start=self.current_pos, destiny=position)
-        self.move()
+        self.queue.append(self.move)
+        self.run_function()
 
     def colect(self, items: list):
         print('COLECT!!!!')
@@ -140,15 +142,24 @@ class Character:
         for str_item in str_list:
             regex = self.get_check_regex(str_item)
             cast_type = self.get_check_type(str_item)
-            regex_return = re.findall(regex, results[count])
-            print(results, regex, count)
-            to_return[str_item] = self.cast_str_by_type(','.join(regex_return), cast_type)
-            count += 1
+            try:
+                regex_return = re.findall(regex, results[count])
+                to_return[str_item] = self.cast_str_by_type(','.join(regex_return), cast_type)
+                count += 1
+            except:
+                self.chat.refresh_frase()
+                self.chat.refresh_frase()
+                to_return = self.check_list(str_list)
+        print(to_return)
         return to_return
 
-    def get_pos(self):
-        result = self.check_list(str_list=['pos'])
+    def get_pos(self): # arrumar o ocr engine
+        # result = self.check_list(str_list=['pos'])
+        # self.current_pos = result['pos']
+        str_list = ['hp', 'pos']
+        result = self.check_list(str_list=str_list)
         self.current_pos = result['pos']
+        self.current_hp = result['hp']
         return self.current_pos
 
 

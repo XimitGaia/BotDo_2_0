@@ -61,6 +61,9 @@ class Chat:
     def get_chat_content(self):
         text = self.screen.get_chat_content(self.chat_position)
         filtered_text = self.filter_chat_info(text)
+        if filtered_text == []:
+            text = self.screen.get_chat_content(self.chat_position, ocr_config_number=2)
+            filtered_text = self.filter_chat_info(text)
         return filtered_text
 
     def chat_io(self, string_array):
@@ -83,7 +86,7 @@ class Chat:
         self.minimize_chat()
         return result
 
-    def refresh_frase(self) ->str:
+    def refresh_frase(self):
         frase = self.cicle_list.pop(0)
         self.cicle_list.append(frase)
         self.chat_io([frase])
