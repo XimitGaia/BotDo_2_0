@@ -158,8 +158,16 @@ def get_character_info():
     }
     if result_request.get('login') == '' or result_request.get('password') == '' or result_request.get('character') == '':
         return 'blank'
-    result_search = requests.get(f"https://www.dofus.com/en/mmorpg/community/directories/character-pages?text={result_request['character']}&character_homeserv%5B%5D={result_request['server']}&character_level_min=0&character_level_max=2340#jt_list")
-    # print(result_search,f"https://www.dofus.com/en/mmorpg/community/directories/character-pages?text={result_request['character']}&character_homeserv%5B%5D={result_request['server']}&character_level_min=0&character_level_max=2340#jt_list")
+    result_search = requests.get(
+        f"https://www.dofus.com/en/mmorpg/community/directories/character-pages?text={result_request['character']}&character_homeserv%5B%5D={result_request['server']}&character_level_min=0&character_level_max=2340#jt_list",
+        headers={
+            'User-Agent': "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/89.0.4389.114 Safari/537.36 Edg/89.0.774.68",
+            'accept': "*/*",
+            'accept-encoding': "gzip, deflate, br",
+            'accept-language': "en-US,en;q=0.9"
+            }
+        )
+    print(result_search,f"https://www.dofus.com/en/mmorpg/community/directories/character-pages?text={result_request['character']}&character_homeserv%5B%5D={result_request['server']}&character_level_min=0&character_level_max=2340#jt_list")
     search_soup = BeautifulSoup(result_search.text)
     names_founded = search_soup.select('.ak-responsivetable > tbody > tr > td:nth-child(2) > a')
     character_url = None

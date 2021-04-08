@@ -102,7 +102,7 @@ class Character:
         return len(self.queue)
 
     def go_to(self, position: tuple):
-        print(f'Moving to {str(position)}')
+        #print(f'Moving to {str(position)}')
         self.moving.register_path_to_move(start=self.current_pos, destiny=position)
         self.queue.append(self.move)
         self.run_function()
@@ -150,7 +150,7 @@ class Character:
                 self.chat.refresh_frase()
                 self.chat.refresh_frase()
                 to_return = self.check_list(str_list)
-        print(to_return)
+        #print(to_return)
         return to_return
 
     def get_pos(self): # arrumar o ocr engine

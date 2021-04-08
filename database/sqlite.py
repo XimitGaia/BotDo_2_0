@@ -123,19 +123,23 @@ class Database:
                     lifePoints INTEGER,
                     actionPoints INTEGER,
                     movementPoints INTEGER,
+                    paDodge INTEGER,
+                    pmDodge INTEGER,
                     earthResistance INTEGER,
                     airResistance INTEGER,
                     fireResistance  INTEGER,
                     waterResistance INTEGER,
-                    neutralResistance INTEGER
+                    neutralResistance INTEGER,
+                    monsterType TEXT
                 )
                 """,
                 'with_index': False
             },
-            'barrers': {
+            'world_map': {
                 'temp': False,
                 'sql': """
                 CREATE TABLE *table*(
+                    id integer PRIMARY KEY AUTOINCREMENT,
                     x INTEGER,
                     y INTEGER,
                     top INTEGER,
@@ -154,6 +158,20 @@ class Database:
                     name TEXT UNIQUE,
                     x INTEGER,
                     y INTEGER
+                )
+                """,
+                'with_index': False
+            },
+            'haverstable_cell_cordinate': {
+                'temp': False,
+                'sql': """
+                CREATE TABLE *table*(
+                    id integer PRIMARY KEY AUTOINCREMENT,
+                    cell_number INTEGER,
+                    item_id INTEGER,
+                    world_map_id INTEGER,
+                    FOREIGN KEY(item_id) REFERENCES job_resources_list(id),
+                    FOREIGN KEY(world_map_id) REFERENCES world_map(id)
                 )
                 """,
                 'with_index': False
@@ -219,19 +237,25 @@ class Database:
 
     def insert_monsters(self, row: tuple):
         cursosr = self.connection.cursor()
-        cursosr.execute("""INSERT OR IGNORE INTO monsters(monster_id,monster_name,level, lifePoints, actionPoints, movementPoints, earthResistance, airResistance, fireResistance , waterResistance, neutralResistance) values(?,?,?,?,?,?,?,?,?,?,?);""",row)
+        cursosr.execute("""INSERT OR IGNORE INTO monsters(monster_id,monster_name,level, lifePoints, actionPoints, movementPoints, paDodge, pmDodge, earthResistance, airResistance, fireResistance , waterResistance, neutralResistance, monsterType ) values(?,?,?,?,?,?,?,?,?,?,?,?,?,?);""",row)
         self.connection.commit()
 
-    def insert_barrers(self, row: tuple):
+    def insert_world_map(self, row: tuple):
         cursosr = self.connection.cursor()
-        cursosr.execute("""INSERT OR IGNORE INTO barrers(x,y,top, left, bottom, right, world_list_zone_id) values(?,?,?,?,?,?,?);""",row)
+        cursosr.execute("""INSERT OR IGNORE INTO world_map(x,y,top, left, bottom, right, world_list_zone_id) values(?,?,?,?,?,?,?);""",row)
         self.connection.commit()
+        return cursosr.lastrowid
 
     def insert_zaaps(self, row: tuple):
         cursosr = self.connection.cursor()
         cursosr.execute("""INSERT OR IGNORE INTO zaaps(name, x, y) values(?,?,?);""",row)
         self.connection.commit()
 
+    def insert_haverstable_cell_cordinate(self, row: tuple):
+        cursosr = self.connection.cursor()
+        cursosr.execute("""INSERT OR IGNORE INTO haverstable_cell_cordinate(cell_number, item_id, world_map_id) values(?,?,?);""",row)
+        self.connection.commit()
+        return cursosr.lastrowid
 
 
     # :::    ::: :::::::::  :::::::::      ::: ::::::::::: ::::::::::
@@ -242,9 +266,9 @@ class Database:
     # #+#    #+# #+#        #+#    #+# #+#     #+# #+#     #+#
     #  ########  ###        #########  ###     ### ###     ##########
 
-    def update_barrers(self, row: tuple, column_name: str):
+    def update_world_map(self, row: tuple, column_name: str):
         cursosr = self.connection.cursor()
-        cursosr.execute(f"""UPDATE  barrers set {column_name} = ? where x = ? and y = ? and world_list_zone_id = ?;""", row)
+        cursosr.execute(f"""UPDATE  world_map set {column_name} = ? where x = ? and y = ? and world_list_zone_id = ?;""", row)
         self.connection.commit()
 
     #   :+:     :+:   :+: :+:   :+:       :+:    :+: :+:       :+:    :+:
@@ -492,7 +516,7 @@ class Database:
 
     def get_barrer(self, x, y, world_list_zone):
         sql = f"""
-            SELECT * FROM barrers
+            SELECT * FROM world_map
             WHERE x = {x} and
             y = {y}
             and world_list_zone_id = {world_list_zone};
@@ -508,8 +532,8 @@ class Database:
 
 if __name__ == '__main__':
     database = Database()
-    sql = f"""SELECT * FROM monsters"""
-    print(database.get_barrer(2,57,1))
+    # sql = f"""SELECT * FROM monsters"""
+    # print(database.get_barrer(2,57,1))
     # # sql = f"""SELECT * FROM monsters"""
     # # print(database.query(sql))
     # sql = f"""SELECT * FROM job_resources_locationa"""

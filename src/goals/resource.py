@@ -269,12 +269,12 @@ class Resource(Goal):
                     self.routine.append(all_position[chunk_size*i:])
                     continue
                 self.routine.append(all_position[chunk_size*i:chunk_size])
-        print(self.routine)
+        #print(self.routine)
 
     def get_next_step(self, character_name: str) -> ActionInterface:
         character_routine_id = self.get_character_routine_id(character_name=character_name)
         action = self.get_next_routine_by_id(routine_id=character_routine_id)
-        print(action)
+        #print(action)
         return action
 
     def get_next_routine_by_id(self, routine_id: int) -> ActionInterface:

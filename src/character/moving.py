@@ -102,7 +102,7 @@ class Moving:
                     self.current_pos[1],
                     1
                 )
-                self.database.update_barrers(row=row, column_name=direction)
+                self.database.update_world_map(row=row, column_name=direction)
                 self.register_path_to_move(self.current_pos, self.moving_to)
                 return True
             self.move_to(direction=direction)
@@ -163,7 +163,7 @@ class Moving:
         return top, bottom, left, right
 
     def djikstra_path_assembler(self, destiny, djikstra_list):
-        print(f'djikstra_path_assembler {str(destiny)}', djikstra_list, '####')
+        #print(f'djikstra_path_assembler {str(destiny)}', djikstra_list, '####')
         djikstra_list = djikstra_list[:-1]
         mounted_path = [destiny]
         while len(djikstra_list) > 1:

@@ -104,7 +104,7 @@ get_all_borders()
 #print(bounds)
 # database = Database()
 # for row in bounds:
-#     database.insert_barrers(row = row)
+#     database.insert_world_map(row = row)
 
 
 
