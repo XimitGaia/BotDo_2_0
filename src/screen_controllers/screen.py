@@ -3,19 +3,22 @@ import sys
 import os
 from pathlib import Path
 path = Path(__file__).resolve()
-sys.path.append(str(path.parents[1]))
+sys.path.append(str(path.parents[2]))
 root_path = str(path.parents[1])
 
 # Import system
 from src.tools.search import Search
 from src.errors.screen_errors import ScreenError
 import numpy as np
+import cv2
 from PIL import Image
 from PIL import ImageGrab
 import time
 import pytesseract
 import pyautogui
 import win32gui
+import PIL.ImageOps
+import re
 
 
 #proportioon Widht_screen/width_action_screen = 1.415
@@ -36,10 +39,28 @@ class Screen:
         self.fight_buttom_region = None
         self.get_fight_buttom_region()
         self.chat_input = None
+        self.coordinates_region = None
+        self.get_coordinates_region()
         self.search = Search()
 
 
+    def get_coordinates_region(self):
+        self.coordinates_region = (
+            self.screen_size[0]*0.00732064421669106,
+            0.0403645833333*self.screen_size[1],
+            self.screen_size[0]*0.053440702781844,
+            0.07421875*self.screen_size[1]
+        )
 
+    def get_pos_ocr(self):
+        time.sleep(1)
+        image = ImageGrab.grab(self.coordinates_region)
+        image = PIL.ImageOps.invert(image)
+        config = f'--psm 13 --oem 3'
+        text = pytesseract.image_to_string(image, config='')
+        coords = tuple([int(i) for i in re.findall(r'(-?\d{1,2})',text)])
+        print(coords)
+        return coords
 
 
     def get_screen_size(self):
@@ -264,17 +285,6 @@ class Screen:
 
     @staticmethod
     def bring_character_to_front(character_window_number: int):
-        # pyautogui.press('alt')
-        # win32gui.ShowWindow(character_window_number, 5)
-        # print(character_window_number)
-        # def aaaa():
-        #     def windowEnumerationHandler(hwnd, all_windows):
-        #         all_windows.append((hwnd, win32gui.GetWindowText(hwnd)))
-        #     all_windows = list()
-        #     win32gui.EnumWindows(windowEnumerationHandler, all_windows)
-        #     for window in all_windows:
-        #         #print(window)
-        # aaaa()
         win32gui.SetForegroundWindow(character_window_number)
 
     def get_chat_content(self,chat_position, ocr_config_number = 1):
@@ -289,7 +299,8 @@ class Screen:
 
 if __name__ == "__main__":
     screen = Screen()
-    points = screen.game_active_screen
-    print(points)
-    print(screen.get_my_bag_type())
+    # screen.get_pos_ocr()
+    while True:
+        screen.get_pos_ocr()
+        time.sleep(0.3)
 
