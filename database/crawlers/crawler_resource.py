@@ -1,5 +1,9 @@
+import sys
+from pathlib import Path
+path = Path(__file__).resolve()
+sys.path.append(str(path.parents[2]))
 import requests
-from sqlite import Database
+from database.sqlite import Database
 
 internal_type_id = {
     1: 47,

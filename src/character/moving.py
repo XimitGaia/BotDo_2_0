@@ -66,9 +66,10 @@ class Moving:
     def get_next_pos(self):
         position_to_move = None
         self.current_pos = self.get_pos()
+        print('next:', self.next_pos, 'current:', self.current_pos)
         if self.next_pos is None:
-            self.next_pos = self.current_pos
-        if self.next_pos == self.current_pos:
+            self.next_pos = self.current_pos[:-1]
+        if self.next_pos == self.current_pos[:-1]:
             self.max_attemps_to_move = 0
             position_to_move = self.pop_movement_queue()
             self.next_pos = position_to_move
@@ -115,7 +116,7 @@ class Moving:
         return False
 
     def get_amakna_allowed_neightborhoods(self, pos):
-        result = self.database.get_barrer(pos[0], pos[1], 1)
+        result = self.database.get_boundary(pos)
         if len(result) == 0:
             return (1, 1, 1, 1)
         #print(result[0][2:-1])
@@ -129,6 +130,7 @@ class Moving:
             #print(len(djikstra_list))
             temp_list_positions = []
             for position in djikstra_list[index]:
+                position = position + (1,) #ajeitar
                 processed_maps.append(position)
                 neighborhoods = self.get_amakna_allowed_neightborhoods(position)
                 top, bottom, left, right = self.get_neighborhoods(position)
@@ -188,6 +190,7 @@ class Moving:
         djikstra_list = self.djikstra(start=start, destiny=destiny)
         path = self.djikstra_path_assembler(destiny=destiny, djikstra_list=djikstra_list)
         self.movement_queue = path
+        print('path',path)
         self.max_attemps_to_move = 0
         self.next_pos = None
 

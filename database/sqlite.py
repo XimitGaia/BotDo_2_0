@@ -141,7 +141,7 @@ class Database:
                 'temp': False,
                 'sql': """
                 CREATE TABLE *table*(
-                    id integer PRIMARY KEY AUTOINCREMENT,
+                    id integer PRIMARY KEY,
                     x INTEGER,
                     y INTEGER,
                     top INTEGER,
@@ -244,7 +244,7 @@ class Database:
 
     def insert_world_map(self, row: tuple):
         cursosr = self.connection.cursor()
-        cursosr.execute("""INSERT OR IGNORE INTO world_map(x,y,top, left, bottom, right, world_list_zone_id) values(?,?,?,?,?,?,?);""",row)
+        cursosr.execute("""INSERT OR IGNORE INTO world_map(id, x, y,top, left, bottom, right, world_list_zone_id) values(?,?,?,?,?,?,?,?);""",row)
         self.connection.commit()
         return cursosr.lastrowid
 
@@ -516,12 +516,12 @@ class Database:
         """
         return self.query(sql)
 
-    def get_barrer(self, x, y, world_list_zone):
+    def get_boundary(self, pos):
         sql = f"""
             SELECT * FROM world_map
-            WHERE x = {x} and
-            y = {y}
-            and world_list_zone_id = {world_list_zone};
+            WHERE x = {pos[0]} and
+            y = {pos[1]}
+            and world_list_zone_id = {pos[2]};
         """
         return self.query(sql)
 
@@ -531,11 +531,47 @@ class Database:
         """
         return self.query(sql)
 
+    def get_map_id(self, pos: tuple, world_list_zone: int):
+        sql = f"""
+            SELECT id FROM world_map
+            WHERE x = {pos[0]} and
+            y = {pos[1]} and
+            world_list_zone = {world_list_zone}
+        """
+        return self.query(sql)
+
+    def get_harvestables_cells_by_map_id(self, harvestables: list, map_id: int):#terminar
+        harvestables = [str(i.get('id')) for i in harvestables]
+        sql = f"""
+            SELECT hc.cell_number FROM haverstable_cell_cordinate hc
+            WHERE world_map_id = {map_id} AND
+            item_id in ({', '.join(harvestables)})
+        """
+        return self.query(sql)
+
+    def get_harvestables_cells_by_pos_and_world_zone(self, harvestables: list, pos: tuple):
+        harvestables = [str(i.get('id')) for i in harvestables]
+        select = ', '.join(harvestables)
+        sql = f"""
+            SELECT
+            hc.cell_number
+            FROM world_map wp
+            LEFT JOIN haverstable_cell_cordinate hc on wp.id = hc.world_map_id
+            LEFT JOIN job_resources_list jr on hc.item_id = jr.id
+            WHERE
+            x={pos[0]} and
+            y={pos[1]} AND
+            world_list_zone_id = {pos[2]} AND
+            hc.item_id in ({select});
+        """
+        return self.query(sql)
+
+
 
 if __name__ == '__main__':
     database = Database()
     # sql = f"""SELECT * FROM monsters"""
-    # print(database.get_barrer(2,57,1))
+    # print(database.get_boundary(2,57,1))
     # # sql = f"""SELECT * FROM monsters"""
     # # print(database.query(sql))
     # sql = f"""SELECT * FROM job_resources_locationa"""

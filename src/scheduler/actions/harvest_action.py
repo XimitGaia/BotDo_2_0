@@ -18,4 +18,4 @@ class HarvestAction(ActionInterface):
         return self.items
 
     def run(self, character: Character):
-        character.colect(self.get_items())
+        character.set_colect(self.get_items())

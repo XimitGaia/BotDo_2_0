@@ -21,6 +21,7 @@ class Resource(Goal):
         self.option = None
         self.account_number = account_number
         self.resources = self.resource_resolver(resources)
+        print(self.resources)
         self.resources_location = None
         self.level = 200
         self.distance = 2 # max distances between groups
@@ -91,16 +92,16 @@ class Resource(Goal):
         return groups
 
     def get_neighborhood(self, pivo: tuple, positions: list, group: list, level: int = 0):
-        barrer = self.database.get_barrer(pivo[1], pivo[2], 1)
+        boundary = self.database.get_boundary((pivo[1], pivo[2], 1))
         # if (pivo[1] == -12 and pivo[2] == 2) or (pivo[1] == -11 and pivo[2] == 2):
-        #     print(barrer)
+        #     print(boundary)
         #     print(group)
 
-        if len(barrer) > 0:
-            has_t = barrer[0][2] == 1
-            has_q = barrer[0][3] == 1
-            has_x = barrer[0][4] == 1
-            has_b = barrer[0][5] == 1
+        if len(boundary) > 0:
+            has_t = boundary[0][2] == 1
+            has_q = boundary[0][3] == 1
+            has_x = boundary[0][4] == 1
+            has_b = boundary[0][5] == 1
         else:
             has_t = True
             has_q = True

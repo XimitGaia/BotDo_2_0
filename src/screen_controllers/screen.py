@@ -34,6 +34,12 @@ class Screen:
         self.get_screen_size()
         self.game_active_screen = None
         self.get_game_active_screen()
+        self.game_active_screen_width = self.game_active_screen[2] - self.game_active_screen[0]
+        self.game_active_screen_height = self.game_active_screen[3] - self.game_active_screen[1]
+        self.y_range = None
+        self.x_range_black = None
+        self.x_range_white = None
+        self.get_map_cell_translations()
         self.bottom_region = None
         self.get_bottom_region()
         self.fight_buttom_region = None
@@ -45,21 +51,27 @@ class Screen:
 
 
     def get_coordinates_region(self):
-        self.coordinates_region = (
-            self.screen_size[0]*0.00732064421669106,
-            0.0403645833333*self.screen_size[1],
-            self.screen_size[0]*0.053440702781844,
-            0.07421875*self.screen_size[1]
-        )
-
-    def get_pos_ocr(self):
+        self.coordinates_region = {
+            1:(
+                self.screen_size[0]*0.00732064421669106,
+                0.0403645833333*self.screen_size[1],
+                self.screen_size[0]*0.053440702781844,
+                0.07421875*self.screen_size[1]
+            ),
+            2: (
+                self.screen_size[0]*0.00732064421669106,
+                0.0403645833333*self.screen_size[1],
+                self.screen_size[0]*0.0344070278184,
+                0.07421875*self.screen_size[1]
+            )
+        }
+    def get_pos_ocr(self, option=1):
         time.sleep(1)
-        image = ImageGrab.grab(self.coordinates_region)
+        image = ImageGrab.grab(self.coordinates_region[option])
         image = PIL.ImageOps.invert(image)
         config = f'--psm 13 --oem 3'
         text = pytesseract.image_to_string(image, config='')
         coords = tuple([int(i) for i in re.findall(r'(-?\d{1,2})',text)])
-        print(coords)
         return coords
 
 
@@ -89,7 +101,7 @@ class Screen:
 
     def get_fight_buttom_region(self):
         self.fight_buttom_region = (
-            0.75419*(self.game_active_screen[2] - self.game_active_screen[0] )+ self.game_active_screen[0],
+            0.75419*(self.game_active_screen_width )+ self.game_active_screen[0],
             self.game_active_screen[3],
             self.game_active_screen[2],
             self.screen_size[1]
@@ -128,13 +140,11 @@ class Screen:
         return (self.game_active_screen[2],0,self.screen_size[0],self.screen_size[1])
 
 
-
-
     def get_action_screen_y_step(self):
-        return (self.game_active_screen[3]-self.game_active_screen[1])/41
+        return (self.game_active_screen_height)/41
 
     def get_action_screen_x_step(self):
-        return (self.game_active_screen[2]-self.game_active_screen[0])/14.5
+        return (self.game_active_screen_width)/14.5
 
     def get_comparation_group(self,point: tuple)->list: #point = (x,y)
         comparation_group = []
@@ -142,6 +152,27 @@ class Screen:
             for x in range(point[0]-1,point[0]+2):
                 comparation_group.append((x,y))
         return comparation_group
+
+    def get_map_cell_translations(self):
+        step_x = self.get_action_screen_x_step()
+        step_y = self.get_action_screen_y_step()
+        y_start = step_y * 0.5
+        self.y_range = list(np.arange(y_start,self.game_active_screen_height - step_y,step_y))
+        self.x_range_black = list(
+            np.arange(
+                step_x * 0.5,
+                self.game_active_screen_width,
+                step_x
+            )
+        )
+        self.x_range_white = list(
+            np.arange(
+                step_x,
+                self.game_active_screen_width,
+                step_x
+            )
+        )
+
 
     def get_battle_map_info(self):
         #variables to return
@@ -257,8 +288,8 @@ class Screen:
         screen_image = ImageGrab.grab((
             0,
             0,
-            width_constant * (self.game_active_screen[2] - self.game_active_screen[0]),
-            height_constant * (self.game_active_screen[3] - self.game_active_screen[1])
+            width_constant * (self.game_active_screen_width),
+            height_constant * (self.game_active_screen_height)
         ))
         text = pytesseract.image_to_string(screen_image, config=ocr_config)
         if text.split(' ')[0].strip() == 'Kerub':

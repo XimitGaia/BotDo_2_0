@@ -16,6 +16,7 @@ from database.sqlite import Database
 from src.screen_controllers.chat import Chat
 from src.character.login import Login
 from src.character.moving import Moving
+from src.character.harvesting import Harvesting
 from src.errors.character_errors import CharacterCriticalError, RetryError, JobError
 import requests
 import time
@@ -45,6 +46,7 @@ class Character:
         self.class_name = None
         self.current_hp = None
         self.current_pos = None
+        self.current_world_zone = 1 #ajeitar para atualizar com zaaps
         self.last_pos = None
         self.my_zaaps = dict()
         self.primary_status = dict()
@@ -55,6 +57,7 @@ class Character:
         self.queue = list()
         self.load_metadata(account)
         self.moving = Moving(self.screen, self.database, self.get_pos)
+        self.harvesting = Harvesting(self.screen, self.database, self.get_pos)
         self.chat = Chat(screen=self.screen, character_name=self.name)
         self.chat_comands_map = Character.get_chat_comands_map()
         self.add_init_functions_on_queue()
@@ -102,13 +105,15 @@ class Character:
         return len(self.queue)
 
     def go_to(self, position: tuple):
-        #print(f'Moving to {str(position)}')
+        print(f'Moving to {str(position)}')
         self.moving.register_path_to_move(start=self.current_pos, destiny=position)
         self.queue.append(self.move)
         self.run_function()
 
-    def colect(self, items: list):
-        print('COLECT!!!!')
+    def set_colect(self, items: list):
+        self.harvesting.set_items(items)
+        self.queue.append(self.colect)
+        self.run_function()
 
     def add_init_functions_on_queue(self):
         self.queue.append(self.login_dofus)
@@ -156,11 +161,16 @@ class Character:
     def get_pos(self): # arrumar o ocr engine
         # result = self.check_list(str_list=['pos'])
         # self.current_pos = result['pos']
-        str_list = ['hp', 'pos']
-        result = self.check_list(str_list=str_list)
-        self.current_pos = result['pos']
-        self.current_hp = result['hp']
+        # str_list = ['hp', 'pos']
+        # result = self.check_list(str_list=str_list)
+        # self.current_pos = result['pos']
+        # self.current_hp = result['hp']
+        pos = self.screen.get_pos_ocr() +  (self.current_world_zone,)
+        if len(pos) < 3:
+            pos = self.screen.get_pos_ocr(option=2) +  (self.current_world_zone,)
+        self.current_pos = pos
         return self.current_pos
+
 
 
     #    :::      :::::::: ::::::::::: ::::::::::: ::::::::  ::::    :::  ::::::::
@@ -175,7 +185,7 @@ class Character:
     def check_hp_pos(self):
         str_list = ['hp', 'pos']
         result = self.check_list(str_list=str_list)
-        self.current_pos = result['pos']
+        self.current_pos = result['pos'] + (self.current_world_zone,)
         self.current_hp = result['hp']
 
     def login_dofus(self):
@@ -236,6 +246,9 @@ class Character:
         has_more_movements = self.moving.execute_movement()
         if has_more_movements:
             self.queue.append(self.move)
+
+    def colect(self):
+        self.harvesting.harvest()
 
     # :::        ::::::::      :::     :::::::::   ::::::::
     # :+:       :+:    :+:   :+: :+:   :+:    :+: :+:    :+:
