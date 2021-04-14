@@ -9,6 +9,7 @@ sys.path.append(str(path.parents[2]))
 import json, os
 import time
 from database.sqlite import Database
+from database.unpackers.unpacker import Unpacker
 local_base_path = os.path.dirname(os.path.realpath(__file__))
 
 json_maps_path = "C:\\Users\\Lucas\\Desktop\\Dofus Decompiler\\cell_info_crossing\\json_maps"
@@ -21,7 +22,8 @@ started_all_threads = False
 
 harvestables = None
 with open(f'{local_base_path}{os.sep}haverst_graph_coordinate_to_item_id.json') as haverst_graph_coordinate_to_item_id:
-    harvestables = json.load(haverst_graph_coordinate_to_item_id)
+    json_file = json.load(haverst_graph_coordinate_to_item_id)
+    harvestables = json_file['harvestables']
 
 def world_map_file_get_cells(file_path: str, world_map_id: int):
     with open(file_path) as file_json:
@@ -87,23 +89,24 @@ def consume_queue(queue: Queue):
 thread_insert = threading.Thread(target=consume_queue, args=(queue_insert,))
 thread_insert.start()
 
-with open(f'{local_base_path}{os.sep}MapPositions.json') as map_positions_json:
-    map_positions = json.load(map_positions_json)
-    total = len(map_positions)
-    print(f'Total {total}')
-    world_map_id = 0
-    print('Initializing threads...')
-    for map in map_positions:
-        world_map_id += 1
-        map_id = int(map.get('id'))
-        xcoord = int(map.get("posX"))
-        ycoord = int(map.get("posY"))
-        world_map_zone = int(map.get("worldMap"))
-        data = (world_map_id, xcoord, ycoord, 1, 1, 1, 1, world_map_zone)
-        thread = threading.Thread(target=insert_and_process, args=(data, map_id))
-        thread_list.append(thread)
-        thread.start()
-        print(f'[{"#"*(int((world_map_id/total)*50))+ " "*(50 - int((world_map_id/total)*50))}] {round((world_map_id/total)*100,2)}%', end='\r')
+
+map_positions = Unpacker.dofus_open("MapPositions.d2o")
+total = len(map_positions)
+print(f'Total {total}')
+count = 0
+print('Initializing threads...')
+for map in map_positions:
+    count += 1
+    map_id = int(map.get('id'))
+    xcoord = int(map.get("posX"))
+    ycoord = int(map.get("posY"))
+    world_map_zone = int(map.get("worldMap"))
+    world_map_id = int(map.get('id'))
+    data = (world_map_id, xcoord, ycoord, 1, 1, 1, 1, world_map_zone)
+    thread = threading.Thread(target=insert_and_process, args=(data, map_id))
+    thread_list.append(thread)
+    thread.start()
+    print(f'[{"#"*(int((count/total)*50))+ " "*(50 - int((count/total)*50))}] {round((count/total)*100,2)}%', end='\r')
 
 print('')
 print('Finalizing threads...')

@@ -16,26 +16,49 @@ import time
 import pytesseract
 import pyautogui
 import win32gui
+import colorsys
 
 
 #proportioon Widht_screen/width_action_screen = 1.415
 #proportion width_sction_screen/high_action_scrren = 1.255
 
-row_dict = dict()
-image = ImageGrab.grab((6,4,200,55))
-hsv = image.convert('HSV')
-matrix = np.array(image)
+image = Image.open(r"C:\Users\Lucas\Desktop\aaaa.png")
+image = image.convert(mode='HSV')
+pixel = image.load()
+count = 110
+v_o  = 178
+s_o = 46
+s_f = 255
+v_f = 255
+for j in range(4):
+    v = int(v_f - j*(77//4))
+    #v = int(v_o + j*(77//4))
+    for i in range(4):
+        step_s = 1
+        #s = int(s_f - i*(46//4))
+        s = int(s_o + i*(209//4))
+        r = int((v/s)*6)
+        start = 131 - r
+        end = 131 + r
+        h_o = 63
+        h_f = 191
+        first = True
+        ends = True
+        for a in range(image.size[1]):
+            h = int(h_o + a*(h_f - h_o)/image.size[1])
+            print(h)
+            if first and h > start:
+                h = 0
+                first = False
+            if ends and h > end:
+                h = 0
+                ends = False
+            for b in range(image.size[0]):
+                pixel[b,a] = (h, s, v)
+        image.show()
 
-line_number = 0
-for line in matrix:
-    bright_pixels = 0
-    for item in line:
-        if item[0] > 200 and item[1] > 200 and item[2] > 200:
-            bright_pixels += 1
-    density = bright_pixels/len(line)
-    row_dict.update({(line_number): density})
-    line_number += 1
-print(row_dict.values())
+    count += 1
+
 
 # b = [0.010050251256281407, 0.010050251256281407, 0.010050251256281407, 0.010050251256281407, 0.010050251256281407, 0.010050251256281407, 0.010050251256281407, 0.010050251256281407, 0.010050251256281407, 0.010050251256281407, 0.010050251256281407, 0.010050251256281407, 0.010050251256281407, 0.010050251256281407, 0.010050251256281407, 0.010050251256281407, 0.02512562814070352]
 # a = []
@@ -55,15 +78,15 @@ print(row_dict.values())
 
 
 
-e = []
-c = []
-last_group = None
-for key, value in row_dict.items():
-    print(key)
-    if value < 0.011:
-        e.append(key)
+# e = []
+# c = []
+# last_group = None
+# for key, value in row_dict.items():
+#     print(key)
+#     if value < 0.011:
+#         e.append(key)
 
-    else:
-        c.append(key)
+#     else:
+#         c.append(key)
 
-print('e',e,'c',c)
+# print('e',e,'c',c)

@@ -249,6 +249,12 @@ class Character:
 
     def colect(self):
         self.harvesting.harvest()
+        self.queue.append(self.check_if_harvest_over)
+
+    def check_if_harvest_over(self):
+        while not self.harvesting.is_harvest_over():
+            time.sleep(1)
+
 
     # :::        ::::::::      :::     :::::::::   ::::::::
     # :+:       :+:    :+:   :+: :+:   :+:    :+: :+:    :+:
