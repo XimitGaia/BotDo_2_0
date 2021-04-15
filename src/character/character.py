@@ -46,7 +46,7 @@ class Character:
         self.class_name = None
         self.current_hp = None
         self.current_pos = None
-        self.current_world_zone = 1 #ajeitar para atualizar com zaaps
+        self.current_world_zone = 1 # ajeitar para atualizar com zaaps
         self.last_pos = None
         self.my_zaaps = dict()
         self.primary_status = dict()
@@ -70,7 +70,7 @@ class Character:
             time.sleep(0.5)
             if job:
                 try:
-                    Character.run_function_with_retry(job)
+                    wait_time = Character.run_function_with_retry(job)
                 except JobError as e:
                     raise JobError(f'Max atemp of 3 for {self.name} job = {job.__name__}')
         self.shared_state.set_state(key='turn_of', value='free')
@@ -96,7 +96,8 @@ class Character:
         if retry_counter > 3:
             raise JobError('Max atemp of 3')
         try:
-            job()
+            wait_time = job()
+            return wait_time
         except RetryError as e:
             print(f'[JOB] {job.__name__} fail {retry_counter}/3', e)
             Character.run_function_with_retry(job, retry_counter)
@@ -108,12 +109,12 @@ class Character:
         print(f'Moving to {str(position)}')
         self.moving.register_path_to_move(start=self.current_pos, destiny=position)
         self.queue.append(self.move)
-        self.run_function()
+        wait_time = self.run_function()
 
     def set_colect(self, items: list):
         self.harvesting.set_items(items)
         self.queue.append(self.colect)
-        self.run_function()
+        wait_time = self.run_function()
 
     def add_init_functions_on_queue(self):
         self.queue.append(self.login_dofus)
@@ -155,23 +156,22 @@ class Character:
                 self.chat.refresh_frase()
                 self.chat.refresh_frase()
                 to_return = self.check_list(str_list)
-        #print(to_return)
+        # print(to_return)
         return to_return
 
-    def get_pos(self): # arrumar o ocr engine
+    def get_pos(self):
+        # arrumar o ocr engine
         # result = self.check_list(str_list=['pos'])
         # self.current_pos = result['pos']
         # str_list = ['hp', 'pos']
         # result = self.check_list(str_list=str_list)
         # self.current_pos = result['pos']
         # self.current_hp = result['hp']
-        pos = self.screen.get_pos_ocr() +  (self.current_world_zone,)
+        pos = self.screen.get_pos_ocr() + (self.current_world_zone,)
         if len(pos) < 3:
-            pos = self.screen.get_pos_ocr(option=2) +  (self.current_world_zone,)
+            pos = self.screen.get_pos_ocr(option=2) + (self.current_world_zone,)
         self.current_pos = pos
         return self.current_pos
-
-
 
     #    :::      :::::::: ::::::::::: ::::::::::: ::::::::  ::::    :::  ::::::::
     #   :+: :+:   :+:    :+:    :+:         :+:    :+:    :+: :+:+:   :+: :+:    :+:
@@ -180,7 +180,6 @@ class Character:
     # +#+     +#+ +#+           +#+         +#+    +#+    +#+ +#+  +#+#+#        +#+
     # #+#     #+# #+#    #+#    #+#         #+#    #+#    #+# #+#   #+#+# #+#    #+#
     # ###     ###  ########     ###     ########### ########  ###    ####  ########
-
 
     def check_hp_pos(self):
         str_list = ['hp', 'pos']
@@ -243,18 +242,19 @@ class Character:
         self.open_close_heavenbag()
 
     def move(self):
+        wait_time = 6
         has_more_movements = self.moving.execute_movement()
         if has_more_movements:
             self.queue.append(self.move)
+        return wait_time
 
     def colect(self):
-        self.harvesting.harvest()
-        self.queue.append(self.check_if_harvest_over)
+        wait_time = self.harvesting.harvest()
+        return wait_time
 
     def check_if_harvest_over(self):
         while not self.harvesting.is_harvest_over():
             time.sleep(1)
-
 
     # :::        ::::::::      :::     :::::::::   ::::::::
     # :+:       :+:    :+:   :+: :+:   :+:    :+: :+:    :+:
@@ -263,7 +263,6 @@ class Character:
     # +#+       +#+    +#+ +#+     +#+ +#+    +#+        +#+
     # #+#       #+#    #+# #+#     #+# #+#    #+# #+#    #+#
     # ########## ########  ###     ### #########   ########
-
 
     def load_metadata(self, account: dict):
         self.load_damages(account.get('damage'))

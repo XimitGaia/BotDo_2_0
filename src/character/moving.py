@@ -9,6 +9,7 @@ from src.screen_controllers.screen import Screen
 from database.sqlite import Database
 import pyautogui
 import time
+import keyboard
 
 class Moving:
 
@@ -30,17 +31,21 @@ class Moving:
                 ycoord = self.screen.game_active_screen[1] + 5
                 point = (xcoord, ycoord)
                 pyautogui.moveTo(point)
+                keyboard.press('shift')
                 time.sleep(0.3)
                 #checar se tem monstro
                 pyautogui.click(point)
+                keyboard.release('shift')
                 time.sleep(6)
                 return (xcoord, ycoord)
             ycoord = self.screen.game_active_screen[3] - 5
             point = (xcoord, ycoord)
             pyautogui.moveTo(point)
+            keyboard.press('shift')
             time.sleep(0.3)
             #checar se tem monstro
             pyautogui.click(point)
+            keyboard.release('shift')
             time.sleep(6)
             return (xcoord, ycoord)
         height = (self.screen.game_active_screen[3] - self.screen.game_active_screen[1])
@@ -49,17 +54,21 @@ class Moving:
             xcoord = self.screen.game_active_screen[0] + 5
             point = (xcoord, ycoord)
             pyautogui.moveTo(point)
+            keyboard.press('shift')
             time.sleep(0.3)
             #checar se tem monstro
             pyautogui.click(point)
+            keyboard.release('shift')
             time.sleep(6)
             return (xcoord, ycoord)
         xcoord = self.screen.game_active_screen[2] - 5
         point = (xcoord, ycoord)
         pyautogui.moveTo(point)
+        keyboard.press('shift')
         time.sleep(0.3)
         #checar se tem monstro
         pyautogui.click(point)
+        keyboard.release('shift')
         time.sleep(6)
         return (xcoord, ycoord)
 
@@ -123,14 +132,17 @@ class Moving:
         return result[0][2:-1]
 
     def djikstra(self, start, destiny):
+        start = start[:-1]
+        # print(f'start: {start}, destiny: {destiny}')
         processed_maps = list()
         djikstra_list = [[start]]
         index = 0
         while destiny not in djikstra_list[index]:
-            #print(len(djikstra_list))
+            # print(len(djikstra_list))
             temp_list_positions = []
             for position in djikstra_list[index]:
-                position = position + (1,) #ajeitar
+                position = position + (1,)
+                # ajeitar ^
                 processed_maps.append(position)
                 neighborhoods = self.get_amakna_allowed_neightborhoods(position)
                 top, bottom, left, right = self.get_neighborhoods(position)
@@ -155,6 +167,7 @@ class Moving:
             if temp_list_positions == []:
                 print("Can't find a way !")
                 break
+        # print(f'djikstra_list: {djikstra_list}')
         return djikstra_list
 
     def get_neighborhoods(self, position: tuple):
@@ -165,9 +178,10 @@ class Moving:
         return top, bottom, left, right
 
     def djikstra_path_assembler(self, destiny, djikstra_list):
-        #print(f'djikstra_path_assembler {str(destiny)}', djikstra_list, '####')
+        # print(f'djikstra_path_assembler {str(destiny)}', djikstra_list, '####')
         djikstra_list = djikstra_list[:-1]
         mounted_path = [destiny]
+        # print(f'mounted_path: {mounted_path}')
         while len(djikstra_list) > 1:
             layer_positions = djikstra_list.pop()
             top, bottom, left, right = self.get_neighborhoods(mounted_path[0])
@@ -190,7 +204,7 @@ class Moving:
         djikstra_list = self.djikstra(start=start, destiny=destiny)
         path = self.djikstra_path_assembler(destiny=destiny, djikstra_list=djikstra_list)
         self.movement_queue = path
-        print('path',path)
+        print('path', path)
         self.max_attemps_to_move = 0
         self.next_pos = None
 

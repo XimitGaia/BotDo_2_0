@@ -35,73 +35,74 @@ class Harvesting:
         cell_ids = [int(i[0]) for i in cell_ids]
         return cell_ids
 
-    def check_image_and_update(self, image, state: str, cell_id: int):
-        if state == 'after_click':
-            self.check_if_is_selected_and_append(image=image, cell_id=cell_id)
-        self.comparison_photos[state].update({cell_id: image})
+    # def check_image_and_update(self, image, state: str, cell_id: int):
+    #     if state == 'after_click':
+    #         self.check_if_is_selected_and_append(image=image, cell_id=cell_id)
+    #     self.comparison_photos[state].update({cell_id: image})
 
-    def get_cell_image(self, cell_id):
-        cell_region = self.get_cell_region(cell_id)
-        image = ImageGrab.grab(cell_region)
-        return image
+    # def get_cell_image(self, cell_id):
+    #     cell_region = self.get_cell_region(cell_id)
+    #     image = ImageGrab.grab(cell_region)
+    #     return image
 
-    def get_bright_density(self, image):
-        number_of_pixels = image.size[0]*image.size[1]
-        matrix = np.array(image)
-        bright_counter = 0
-        for row in matrix:
-            for pixel in row:
-                if pixel[0]
-                bright_counter += pixel[2]
-        return bright_counter/number_of_pixels
+    # def get_bright_density(self, image):
+    #     number_of_pixels = image.size[0]*image.size[1]
+    #     matrix = np.array(image)
+    #     bright_counter = 0
+    #     for row in matrix:
+    #         for pixel in row:
+    #             if pixel[0]
+    #             bright_counter += pixel[2]
+    #     return bright_counter/number_of_pixels
 
-    def is_item_selected(self, after_click_image, cell_id: int):
-        initial_state_image = self.comparison_photos['initial_state'].get(cell_id).convert('HSV')
-        after_click_image = after_click_image.convert('HSV')
-        initial_state_image_bright_density = self.get_bright_density(initial_state_image)
-        after_click_image_birght_density = self.get_bright_density(after_click_image)
-        print(after_click_image_birght_density - initial_state_image_bright_density)
-        if after_click_image_birght_density - initial_state_image_bright_density > 10:
-            return True
-        return False
+    # def is_item_selected(self, after_click_image, cell_id: int):
+    #     initial_state_image = self.comparison_photos['initial_state'].get(cell_id).convert('HSV')
+    #     after_click_image = after_click_image.convert('HSV')
+    #     initial_state_image_bright_density = self.get_bright_density(initial_state_image)
+    #     after_click_image_birght_density = self.get_bright_density(after_click_image)
+    #     print(after_click_image_birght_density - initial_state_image_bright_density)
+    #     if after_click_image_birght_density - initial_state_image_bright_density > 10:
+    #         return True
+    #     return False
 
-    def is_item_still_selected(self, check_image, cell_id: int):
-        after_click_image = self.comparison_photos['after_click'].get(cell_id).convert('HSV')
-        check_image = check_image.convert('HSV')
-        check_image_bright_density = self.get_bright_density(check_image)
-        after_click_image_birght_density = self.get_bright_density(after_click_image)
-        if check_image_bright_density - after_click_image_birght_density < -10:
-            return False
-        return True
+    # def is_item_still_selected(self, check_image, cell_id: int):
+    #     after_click_image = self.comparison_photos['after_click'].get(cell_id).convert('HSV')
+    #     check_image = check_image.convert('HSV')
+    #     check_image_bright_density = self.get_bright_density(check_image)
+    #     after_click_image_birght_density = self.get_bright_density(after_click_image)
+    #     if check_image_bright_density - after_click_image_birght_density < -10:
+    #         return False
+    #     return True
 
-    def check_if_is_selected_and_append(self, image, cell_id: int):
-        if self.is_item_selected(after_click_image=image, cell_id=cell_id):
-            print('isss  selected')
-            self.cells_to_process.append(cell_id)
+    # def check_if_is_selected_and_append(self, image, cell_id: int):
+    #     if self.is_item_selected(after_click_image=image, cell_id=cell_id):
+    #         print('isss  selected')
+    #         self.cells_to_process.append(cell_id)
 
-    def is_harvest_over(self):
-        for cell_id in self.cells_to_process:
-            cell_image = self.get_cell_image(cell_id=cell_id)
-            if not self.is_item_still_selected(check_image=cell_image, cell_id=cell_id):
-                self.cells_to_process.remove(cell_id)
-        if len(self.cells_to_process) < 1:
-            return True
-        return False
+    # def is_harvest_over(self):
+    #     for cell_id in self.cells_to_process:
+    #         cell_image = self.get_cell_image(cell_id=cell_id)
+    #         if not self.is_item_still_selected(check_image=cell_image, cell_id=cell_id):
+    #             self.cells_to_process.remove(cell_id)
+    #     if len(self.cells_to_process) < 1:
+    #         return True
+    #     return False
 
     def select_all_items(self, cell_ids: list):
         keyboard.press('shift')
         for cell_id in cell_ids:
             position = self.screen.map_to_screen(cell_id)
-            initial_state_image = self.get_cell_image(cell_id)
+            position = (position[0], position[1]+int(self.screen.screen_size[0]*0.00366032210))
+            # initial_state_image = self.get_cell_image(cell_id)
             pyautogui.moveTo(position)
             time.sleep(0.05)
             pyautogui.click(position)
-            pyautogui.moveTo((5,5))
-            time.sleep(0.02)
-            after_click_image = self.get_cell_image(cell_id)
-            self.check_image_and_update(image=initial_state_image, state='initial_state', cell_id=cell_id)
-            self.check_image_and_update(image=after_click_image, state='after_click', cell_id=cell_id)
-            time.sleep(0.10)
+            # pyautogui.moveTo((5, 5))
+            # time.sleep(0.02)
+            # after_click_image = self.get_cell_image(cell_id)
+            # self.check_image_and_update(image=initial_state_image, state='initial_state', cell_id=cell_id)
+            # self.check_image_and_update(image=after_click_image, state='after_click', cell_id=cell_id)
+            time.sleep(0.15)
         keyboard.release('shift')
 
     def harvest(self):
@@ -110,6 +111,8 @@ class Harvesting:
             pos = self.screen.get_pos_ocr(option=2) + (1,)
         cell_ids = self.get_harvestables_cells(pos=pos)
         self.select_all_items(cell_ids)
+        wait_time = 2.5*len(cell_ids)
+        return wait_time
 
     def get_cell_region(self, cell_id: int):
         central_position = self.screen.map_to_screen(cell_id)
@@ -122,26 +125,19 @@ class Harvesting:
         )
         return region
 
-    def get_tree_region(self, cell_id: int)
 
 
-
-
-
-
-s
 if __name__ == "__main__":
     def get_pos():
         print('A')
     screen = Screen()
     database = Database()
-    har  = Harvesting(screen, database, get_pos=get_pos)
+    har = Harvesting(screen, database, get_pos=get_pos)
     time.sleep(1)
-    har.select_all_items([416,338])#[325,340,206,192]
+    har.select_all_items([416, 338])
     time.sleep(5)
     for image in har.comparison_photos['initial_state'].values():
         image.show()
     for image in har.comparison_photos['after_click'].values():
         image.show()
 
-D
