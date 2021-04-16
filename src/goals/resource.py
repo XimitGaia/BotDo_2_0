@@ -279,16 +279,15 @@ class Resource(Goal):
         return action
 
     def get_next_routine_by_id(self, routine_id: int) -> ActionInterface:
+        routine = self.routine[routine_id]
+        to_return = routine.pop(0)
+        routine.append(to_return)
+        self.routine[routine_id] = routine
         if self.routine_type_by_id[routine_id] == 'MOVE':
-            routine = self.routine[routine_id]
-            to_return = routine.pop(0)
-            routine.append(to_return)
-            self.routine[routine_id] = routine
             self.routine_type_by_id[routine_id] = 'HARVEST'
-            return MoveAction(x=to_return[0], y=to_return[1])
+            return [MoveAction(x=to_return[0], y=to_return[1])]
         else:
-            self.routine_type_by_id[routine_id] = 'MOVE'
-            return HarvestAction(items=self.resources)
+            return [HarvestAction(items=self.resources), MoveAction(x=to_return[0], y=to_return[1])]
 
     def get_character_routine_id(self, character_name: str) -> int:
         if self.character_routine.get(character_name) is None:

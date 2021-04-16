@@ -5,11 +5,16 @@ from pathlib import Path
 path = Path(__file__).resolve()
 sys.path.append(str(path.parents[1]))
 root_path = str(path.parents[1])
-
 # Import system
+import requests
+import time
+import re
+import keyboard
+import pyautogui
+import traceback
+import threading
 from bs4 import BeautifulSoup
 from src.state.state import State
-import traceback
 from src.errors.screen_errors import ScreenError
 from src.screen_controllers.screen import Screen
 from database.sqlite import Database
@@ -18,11 +23,6 @@ from src.character.login import Login
 from src.character.moving import Moving
 from src.character.harvesting import Harvesting
 from src.errors.character_errors import CharacterCriticalError, RetryError, JobError
-import requests
-import time
-import re
-import keyboard
-import pyautogui
 
 debug = True
 
@@ -47,7 +47,7 @@ class Character:
         self.current_hp = None
         self.current_pos = None
         self.current_world_zone = 1 # ajeitar para atualizar com zaaps
-        self.last_pos = None
+        self.time_controler = {'started_at': 0, 'seconds_to_wait': 0, 'next_pos': None, 'locked_timer': False}
         self.my_zaaps = dict()
         self.primary_status = dict()
         self.res_status = dict()
@@ -61,19 +61,32 @@ class Character:
         self.chat = Chat(screen=self.screen, character_name=self.name)
         self.chat_comands_map = Character.get_chat_comands_map()
         self.add_init_functions_on_queue()
+        self.start_position_watcher()
 
     def run_function(self):
         if len(self.queue) > 0:
+            self.wait()
             job = self.queue.pop(0)
             if job.__name__ != 'login_dofus':
                 Screen.bring_character_to_front(self.window_id)
-            time.sleep(0.5)
             if job:
                 try:
-                    wait_time = Character.run_function_with_retry(job)
+                    Character.run_function_with_retry(job)
                 except JobError as e:
                     raise JobError(f'Max atemp of 3 for {self.name} job = {job.__name__}')
-        self.shared_state.set_state(key='turn_of', value='free')
+        if job.__name__ != 'collect':
+            self.shared_state.set_state(key='turn_of', value='free')
+
+    def wait(self):
+        if not self.time_controler['locked_timer']:
+            elapsed_time = time.time() - self.time_controler.get('started_at')
+            while elapsed_time < self.time_controler.get('seconds_to_wait'):
+                if self.current_pos[:-1] == self.time_controler['next_pos']:
+                    time.sleep(0.5)
+                    break
+                time.sleep(0.05)
+                elapsed_time = time.time() - self.time_controler.get('started_at')
+            self.time_controler.update({'started_at': 0, 'seconds_to_wait': 0})
 
     @staticmethod
     def get_chat_comands_map():
@@ -105,20 +118,26 @@ class Character:
     def queue_len(self):
         return len(self.queue)
 
+    def get_character_expected_position(self):
+        if self.time_controler.get('next_pos') is None:
+            return self.current_pos
+        return self.time_controler.get('next_pos') + (self.current_world_zone,)
+
     def go_to(self, position: tuple):
         print(f'Moving to {str(position)}')
-        self.moving.register_path_to_move(start=self.current_pos, destiny=position)
+        start_position = self.get_character_expected_position()
+        self.moving.register_path_to_move(start=start_position, destiny=position)
         self.queue.append(self.move)
-        wait_time = self.run_function()
+        self.run_function()
 
-    def set_colect(self, items: list):
+    def set_collect(self, items: list):
         self.harvesting.set_items(items)
-        self.queue.append(self.colect)
-        wait_time = self.run_function()
+        self.queue.append(self.collect)
+        self.run_function()
 
     def add_init_functions_on_queue(self):
         self.queue.append(self.login_dofus)
-        self.queue.append(self.check_hp_pos)
+        # self.queue.append(self.check_hp_pos)
         if not debug:
             self.queue.append(self.get_zaaps)
 
@@ -160,18 +179,42 @@ class Character:
         return to_return
 
     def get_pos(self):
-        # arrumar o ocr engine
-        # result = self.check_list(str_list=['pos'])
-        # self.current_pos = result['pos']
-        # str_list = ['hp', 'pos']
-        # result = self.check_list(str_list=str_list)
-        # self.current_pos = result['pos']
-        # self.current_hp = result['hp']
-        pos = self.screen.get_pos_ocr() + (self.current_world_zone,)
-        if len(pos) < 3:
-            pos = self.screen.get_pos_ocr(option=2) + (self.current_world_zone,)
-        self.current_pos = pos
+        if self.is_pos_ocr_with_error():
+            result = self.check_list(str_list=['pos'])
+            self.current_pos = result['pos'] + (self.current_world_zone,)
         return self.current_pos
+
+    def is_pos_ocr_with_error(self):
+        return self.shared_state.get('threads_status').get(self.watch_position_thread_name) == 'error'
+
+    def watch_position(self):
+        self.watch_position_thread_name = f'{self.name}_watch_position_thread'
+        self.shared_state.set_thread_status(self.watch_position_thread_name, 'running')
+        errors = 0
+        while True:
+            if self.shared_state.get('status') == 'paused':
+                self.shared_state.set_thread_status(self.watch_position_thread_name, 'paused')
+                while True:
+                    if self.shared_state.get('status') != 'paused':
+                        self.shared_state.set_thread_status(self.watch_position_thread_name, 'runnning')
+                        break
+                        time.sleep(1)
+            if self.window_id == self.screen.get_foreground_screen_id():
+                pos = self.screen.get_pos_ocr() + (self.current_world_zone,)
+                if len(pos) < 3:
+                    pos = self.screen.get_pos_ocr(option=2) + (self.current_world_zone,)
+                if len(pos) < 3:
+                    errors += 1
+                    if errors > 5:
+                        self.shared_state.set_thread_status(self.watch_position_thread_name, 'error')
+                else:
+                    self.current_pos = pos
+                    errors = 0
+            time.sleep(0.1)
+
+    def start_position_watcher(self):
+        thread = threading.Thread(target=self.watch_position, args=())
+        thread.start()
 
     #    :::      :::::::: ::::::::::: ::::::::::: ::::::::  ::::    :::  ::::::::
     #   :+: :+:   :+:    :+:    :+:         :+:    :+:    :+: :+:+:   :+: :+:    :+:
@@ -242,19 +285,30 @@ class Character:
         self.open_close_heavenbag()
 
     def move(self):
-        wait_time = 6
-        has_more_movements = self.moving.execute_movement()
+        result = self.moving.execute_movement()
+        has_more_movements = result[0]
+        next_pos = result[1]
+        self.time_controler['next_pos'] = next_pos
         if has_more_movements:
             self.queue.append(self.move)
-        return wait_time
+        self.set_wait_time(8)
+        self.time_controler['locked_timer'] = False
+        self.time_controler['started_at'] = time.time()
 
-    def colect(self):
+    def collect(self):
         wait_time = self.harvesting.harvest()
-        return wait_time
+        self.time_controler['locked_timer'] = True
+        self.set_wait_time(wait_time)
 
     def check_if_harvest_over(self):
         while not self.harvesting.is_harvest_over():
             time.sleep(1)
+
+    def set_wait_time(self, wait_time):
+        if self.time_controler['locked_timer']:
+            self.time_controler['seconds_to_wait'] += wait_time
+        else:
+            self.time_controler['seconds_to_wait'] = wait_time
 
     # :::        ::::::::      :::     :::::::::   ::::::::
     # :+:       :+:    :+:   :+: :+:   :+:    :+: :+:    :+:

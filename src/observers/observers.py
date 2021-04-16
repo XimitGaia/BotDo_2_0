@@ -4,17 +4,15 @@ import os
 from pathlib import Path
 path = Path(__file__).resolve()
 sys.path.append(str(path.parents[1]))
-
-
 # Import system
 import time
+import keyboard
+import threading
 from PIL import Image
 from PIL import ImageGrab
 from src.tools.search import Search
-import threading
 from src.state.state import State
 from src.screen_controllers.screen import Screen
-import keyboard
 
 
 class Observers:
@@ -22,6 +20,8 @@ class Observers:
     debug_map = dict({
         'battle': True
     })
+
+
 
     @staticmethod
     def battle_observer(screen:Screen, state:State, debug: bool= False):

@@ -5,8 +5,8 @@
       "name": "Bot",
       "type": "python",
       "request": "launch",
-      "program": "${workspaceFolder}/database/world_map_populate/populate_world_map_test.py",
-      "console": "integratedTerminal"
+      "program": "${workspaceFolder}/api.py",
+      "console": "externalTerminal"
     }
   ]
 }

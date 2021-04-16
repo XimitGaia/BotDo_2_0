@@ -92,17 +92,20 @@ class Harvesting:
         keyboard.press('shift')
         for cell_id in cell_ids:
             position = self.screen.map_to_screen(cell_id)
-            position = (position[0], position[1]+int(self.screen.screen_size[0]*0.00366032210))
+            position = (
+                position[0] + int(self.screen.screen_size[0]*0.0036603221083),
+                position[1] - int(self.screen.screen_size[0]*0.0036603221083)
+            )
             # initial_state_image = self.get_cell_image(cell_id)
             pyautogui.moveTo(position)
-            time.sleep(0.05)
+            time.sleep(0.07)
             pyautogui.click(position)
             # pyautogui.moveTo((5, 5))
             # time.sleep(0.02)
             # after_click_image = self.get_cell_image(cell_id)
             # self.check_image_and_update(image=initial_state_image, state='initial_state', cell_id=cell_id)
             # self.check_image_and_update(image=after_click_image, state='after_click', cell_id=cell_id)
-            time.sleep(0.15)
+            time.sleep(0.2)
         keyboard.release('shift')
 
     def harvest(self):
@@ -111,7 +114,7 @@ class Harvesting:
             pos = self.screen.get_pos_ocr(option=2) + (1,)
         cell_ids = self.get_harvestables_cells(pos=pos)
         self.select_all_items(cell_ids)
-        wait_time = 2.5*len(cell_ids)
+        wait_time = 4*len(cell_ids)
         return wait_time
 
     def get_cell_region(self, cell_id: int):

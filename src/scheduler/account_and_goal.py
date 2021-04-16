@@ -20,6 +20,7 @@ class AccountAndGoal():
     def next_goal_step(self):
         character_name = self.getName()
         next_step = self.goal.get_next_step(character_name=character_name)
-        next_step.run(character=self.character)
+        for sub_steps in next_step:
+            sub_steps.run(character=self.character)
 
 

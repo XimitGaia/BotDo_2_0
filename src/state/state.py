@@ -29,8 +29,8 @@ class State:
         self._set_state(key='status', value=self.temp_state_store)
         self.temp_state_store = None
 
-    def set_thread_status(self, thread_name, running_or_paused):
-        self.state['threads_status'][thread_name] = running_or_paused
+    def set_thread_status(self, thread_name, status):
+        self.state['threads_status'][thread_name] = status
 
     def get(self, key):
         return self.state[key]

@@ -36,7 +36,6 @@ class Moving:
                 #checar se tem monstro
                 pyautogui.click(point)
                 keyboard.release('shift')
-                time.sleep(6)
                 return (xcoord, ycoord)
             ycoord = self.screen.game_active_screen[3] - 5
             point = (xcoord, ycoord)
@@ -46,7 +45,6 @@ class Moving:
             #checar se tem monstro
             pyautogui.click(point)
             keyboard.release('shift')
-            time.sleep(6)
             return (xcoord, ycoord)
         height = (self.screen.game_active_screen[3] - self.screen.game_active_screen[1])
         ycoord = self.screen.game_active_screen[1] + (height * (percentage / 100))
@@ -59,7 +57,6 @@ class Moving:
             #checar se tem monstro
             pyautogui.click(point)
             keyboard.release('shift')
-            time.sleep(6)
             return (xcoord, ycoord)
         xcoord = self.screen.game_active_screen[2] - 5
         point = (xcoord, ycoord)
@@ -69,13 +66,12 @@ class Moving:
         #checar se tem monstro
         pyautogui.click(point)
         keyboard.release('shift')
-        time.sleep(6)
         return (xcoord, ycoord)
 
     def get_next_pos(self):
         position_to_move = None
         self.current_pos = self.get_pos()
-        print('next:', self.next_pos, 'current:', self.current_pos)
+        #print('next:', self.next_pos, 'current:', self.current_pos)
         if self.next_pos is None:
             self.next_pos = self.current_pos[:-1]
         if self.next_pos == self.current_pos[:-1]:
@@ -116,13 +112,9 @@ class Moving:
                 self.register_path_to_move(self.current_pos, self.moving_to)
                 return True
             self.move_to(direction=direction)
-            #escalonar tempo pelos usuarios nao precisa espera se outra conta for jogar
-            time.sleep(5)
             len_movement_queue = len(self.movement_queue)
-            if len_movement_queue == 0:
-                self.get_pos()
-            return len_movement_queue > 0
-        return False
+            return [len_movement_queue > 0, next_pos]
+        return [False, next_pos]
 
     def get_amakna_allowed_neightborhoods(self, pos):
         result = self.database.get_boundary(pos)
@@ -132,36 +124,34 @@ class Moving:
         return result[0][2:-1]
 
     def djikstra(self, start, destiny):
+        processed_maps = list()
         start = start[:-1]
         # print(f'start: {start}, destiny: {destiny}')
-        processed_maps = list()
         djikstra_list = [[start]]
         index = 0
         while destiny not in djikstra_list[index]:
             # print(len(djikstra_list))
             temp_list_positions = []
             for position in djikstra_list[index]:
-                position = position + (1,)
-                # ajeitar ^
                 processed_maps.append(position)
-                neighborhoods = self.get_amakna_allowed_neightborhoods(position)
+                neighborhoods = self.get_amakna_allowed_neightborhoods(position+(1,))
                 top, bottom, left, right = self.get_neighborhoods(position)
                 if neighborhoods[0] == 1:
                     if top not in processed_maps:
                         temp_list_positions.append(top)
+                        processed_maps.append(top)
                 if neighborhoods[1] == 1:
                     if left not in processed_maps:
                         temp_list_positions.append(left)
+                        processed_maps.append(left)
                 if neighborhoods[2] == 1:
                     if bottom not in processed_maps:
                         temp_list_positions.append(bottom)
+                        processed_maps.append(bottom)
                 if neighborhoods[3] == 1:
                     if right not in processed_maps:
                         temp_list_positions.append(right)
-                processed_maps.append(top)
-                processed_maps.append(bottom)
-                processed_maps.append(left)
-                processed_maps.append(right)
+                        processed_maps.append(right)
             djikstra_list.append(temp_list_positions)
             index += 1
             if temp_list_positions == []:
@@ -181,22 +171,22 @@ class Moving:
         # print(f'djikstra_path_assembler {str(destiny)}', djikstra_list, '####')
         djikstra_list = djikstra_list[:-1]
         mounted_path = [destiny]
-        # print(f'mounted_path: {mounted_path}')
         while len(djikstra_list) > 1:
             layer_positions = djikstra_list.pop()
             top, bottom, left, right = self.get_neighborhoods(mounted_path[0])
             if top in layer_positions:
                 mounted_path.insert(0, top)
                 continue
-            if bottom in layer_positions:
+            elif bottom in layer_positions:
                 mounted_path.insert(0, bottom)
                 continue
-            if left in layer_positions:
+            elif left in layer_positions:
                 mounted_path.insert(0, left)
                 continue
-            if right in layer_positions:
+            elif right in layer_positions:
                 mounted_path.insert(0, right)
                 continue
+        # print(f'mounted_path: {mounted_path}')
         return mounted_path
 
     def register_path_to_move(self, start, destiny):
@@ -204,7 +194,7 @@ class Moving:
         djikstra_list = self.djikstra(start=start, destiny=destiny)
         path = self.djikstra_path_assembler(destiny=destiny, djikstra_list=djikstra_list)
         self.movement_queue = path
-        print('path', path)
+        # print('path', path)
         self.max_attemps_to_move = 0
         self.next_pos = None
 
