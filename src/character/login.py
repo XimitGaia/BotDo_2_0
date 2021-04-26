@@ -33,7 +33,7 @@ class Login:
             app = application.Application()
             dofus_application_path = f"{os.getenv('LOCALAPPDATA')}{os.sep}Ankama{os.sep}zaap{os.sep}dofus{os.sep}Dofus.exe"
             app.start(dofus_application_path)
-            time.sleep(7)
+            time.sleep(15)
         except:
             raise LoginError("Can't open dofus.exe")
 

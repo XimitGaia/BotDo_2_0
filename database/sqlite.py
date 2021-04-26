@@ -117,64 +117,83 @@ class Database:
             'monsters': {
                 'temp': False,
                 'sql': """
-                CREATE TABLE *table*(
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    monster_id INTEGER,
-                    monster_name TEXT,
-                    level INTEGER,
-                    lifePoints INTEGER,
-                    actionPoints INTEGER,
-                    movementPoints INTEGER,
-                    paDodge INTEGER,
-                    pmDodge INTEGER,
-                    earthResistance INTEGER,
-                    airResistance INTEGER,
-                    fireResistance  INTEGER,
-                    waterResistance INTEGER,
-                    neutralResistance INTEGER,
-                    monsterType TEXT
-                )
+                    CREATE TABLE *table*(
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        monster_id INTEGER,
+                        monster_name TEXT,
+                        monster_type TEXT,
+                        level INTEGER,
+                        life_points INTEGER,
+                        action_points INTEGER,
+                        movement_points INTEGER,
+                        pa_dodge INTEGER,
+                        pm_dodge INTEGER,
+                        earth_resistance INTEGER,
+                        air_resistance INTEGER,
+                        fire_resistance  INTEGER,
+                        water_resistance INTEGER,
+                        neutral_resistance INTEGER,
+                        can_trackle INTEGER,
+                        can_be_pushed INTEGER,
+                        can_switch_pos INTEGER,
+                        can_switch_pos_on_target INTEGER,
+                        can_be_carried INTEGER
+                    )
+                """,
+                'with_index': False
+            },
+            'drops': {
+                'temp': False,
+                'sql': """
+                    CREATE TABLE *table*(
+                        item_id integer PRIMARY KEY,
+                        item_name TEXT,
+                        item_level INTEGER,
+                        monster_id INTEGER,
+                        drop_rate REAL,
+                        FOREIGN KEY(monster_id) REFERENCES monsters(id)
+                    )
                 """,
                 'with_index': False
             },
             'world_map': {
                 'temp': False,
                 'sql': """
-                CREATE TABLE *table*(
-                    id integer PRIMARY KEY,
-                    x INTEGER,
-                    y INTEGER,
-                    top INTEGER,
-                    left INTEGER,
-                    bottom INTEGER,
-                    right INTEGER,
-                    world_list_zone_id INTEGER
-                )
+                    CREATE TABLE *table*(
+                        id integer PRIMARY KEY,
+                        x INTEGER,
+                        y INTEGER,
+                        top INTEGER,
+                        left INTEGER,
+                        bottom INTEGER,
+                        right INTEGER,
+                        world_list_zone_id INTEGER
+                    )
                 """,
                 'with_index': False
             },
             'zaaps': {
                 'temp': False,
                 'sql': """
-                CREATE TABLE *table*(
-                    name TEXT UNIQUE,
-                    x INTEGER,
-                    y INTEGER
-                )
+                    CREATE TABLE *table*(
+                        name TEXT UNIQUE,
+                        x INTEGER,
+                        y INTEGER
+                    )
                 """,
                 'with_index': False
             },
             'haverstable_cell_cordinate': {
                 'temp': False,
                 'sql': """
-                CREATE TABLE *table*(
-                    id integer PRIMARY KEY AUTOINCREMENT,
-                    cell_number INTEGER,
-                    item_id INTEGER,
-                    world_map_id INTEGER,
-                    FOREIGN KEY(item_id) REFERENCES job_resources_list(id),
-                    FOREIGN KEY(world_map_id) REFERENCES world_map(id)
-                )
+                    CREATE TABLE *table*(
+                        id integer PRIMARY KEY AUTOINCREMENT,
+                        cell_number INTEGER,
+                        item_id INTEGER,
+                        world_map_id INTEGER,
+                        FOREIGN KEY(item_id) REFERENCES job_resources_list(id),
+                        FOREIGN KEY(world_map_id) REFERENCES world_map(id)
+                    )
                 """,
                 'with_index': False
             }
@@ -238,27 +257,31 @@ class Database:
         self.connection.commit()
 
     def insert_monsters(self, row: tuple):
-        cursosr = self.connection.cursor()
-        cursosr.execute("""INSERT OR IGNORE INTO monsters(monster_id,monster_name,level, lifePoints, actionPoints, movementPoints, paDodge, pmDodge, earthResistance, airResistance, fireResistance , waterResistance, neutralResistance, monsterType ) values(?,?,?,?,?,?,?,?,?,?,?,?,?,?);""",row)
+        cursor = self.connection.cursor()
+        cursor.execute("""INSERT OR IGNORE INTO monsters(monster_id, monster_name, monster_type, level, life_points, action_points, movement_points, pa_dodge, pm_dodge, earth_resistance, air_resistance, fire_resistance , water_resistance, neutral_resistance, can_trackle, can_be_pushed, can_switch_pos, can_switch_pos_on_target, can_be_carried) values(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?);""", row)
         self.connection.commit()
 
     def insert_world_map(self, row: tuple):
-        cursosr = self.connection.cursor()
-        cursosr.execute("""INSERT OR IGNORE INTO world_map(id, x, y,top, left, bottom, right, world_list_zone_id) values(?,?,?,?,?,?,?,?);""",row)
+        cursor = self.connection.cursor()
+        cursor.execute("""INSERT OR IGNORE INTO world_map(id, x, y,top, left, bottom, right, world_list_zone_id) values(?,?,?,?,?,?,?,?);""", row)
         self.connection.commit()
-        return cursosr.lastrowid
+        return cursor.lastrowid
 
     def insert_zaaps(self, row: tuple):
-        cursosr = self.connection.cursor()
-        cursosr.execute("""INSERT OR IGNORE INTO zaaps(name, x, y) values(?,?,?);""",row)
+        cursor = self.connection.cursor()
+        cursor.execute("""INSERT OR IGNORE INTO zaaps(name, x, y) values(?,?,?);""", row)
         self.connection.commit()
 
     def insert_haverstable_cell_cordinate(self, row: tuple):
-        cursosr = self.connection.cursor()
-        cursosr.execute("""INSERT OR IGNORE INTO haverstable_cell_cordinate(cell_number, item_id, world_map_id) values(?,?,?);""",row)
+        cursor = self.connection.cursor()
+        cursor.execute("""INSERT OR IGNORE INTO haverstable_cell_cordinate(cell_number, item_id, world_map_id) values(?,?,?);""", row)
         self.connection.commit()
-        return cursosr.lastrowid
+        return cursor.lastrowid
 
+    def insert_drops(self, row: tuple):
+        cursor = self.connection.cursor()
+        cursor.execute("""INSERT OR IGNORE INTO drops(item_id, item_name, item_level, monster_id, drop_rate) values(?,?,?,?,?);""", row)
+        self.connection.commit()
 
     # :::    ::: :::::::::  :::::::::      ::: ::::::::::: ::::::::::
     # :+:    :+: :+:    :+: :+:    :+:   :+: :+:   :+:     :+:
@@ -269,8 +292,8 @@ class Database:
     #  ########  ###        #########  ###     ### ###     ##########
 
     def update_world_map(self, row: tuple, column_name: str):
-        cursosr = self.connection.cursor()
-        cursosr.execute(f"""UPDATE  world_map set {column_name} = ? where x = ? and y = ? and world_list_zone_id = ?;""", row)
+        cursor = self.connection.cursor()
+        cursor.execute(f"""UPDATE  world_map set {column_name} = ? where x = ? and y = ? and world_list_zone_id = ?;""", row)
         self.connection.commit()
 
     #   :+:     :+:   :+: :+:   :+:       :+:    :+: :+:       :+:    :+:
@@ -457,6 +480,9 @@ class Database:
         ]
         self.insert_values_executor(callback=self.insert_zaaps, values_list=values_list)
 
+    # def create_resources_location_view(self):
+
+
 
 
 
@@ -518,10 +544,10 @@ class Database:
 
     def get_boundary(self, pos):
         sql = f"""
-            SELECT * FROM world_map
-            WHERE x = {pos[0]} and
-            y = {pos[1]}
-            and world_list_zone_id = {pos[2]};
+                SELECT top, left, bottom, right FROM world_map
+                WHERE x = {pos[0]} and
+                y = {pos[1]}
+                and world_list_zone_id = {pos[2]};
         """
         return self.query(sql)
 
@@ -570,10 +596,5 @@ class Database:
 
 if __name__ == '__main__':
     database = Database()
-    # sql = f"""SELECT * FROM monsters"""
-    # print(database.get_boundary(2,57,1))
-    # # sql = f"""SELECT * FROM monsters"""
-    # # print(database.query(sql))
-    # sql = f"""SELECT * FROM job_resources_locationa"""
-    # print(database.query(sql))
+    print   (database.get_boundary((7,23,1)))
     pass

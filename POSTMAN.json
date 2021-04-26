@@ -68,12 +68,12 @@
     "mode": "resources",
     "items": [
       {
-        "value": "Oak",
-        "label": "Oak"
+        "value": "Malt",
+        "label": "Malt"
       },
       {
-        "value": "Walnut",
-        "label": "Walnut"
+        "value": "Hop Hop",
+        "label": "Hop Hop"
       }
     ]
   }

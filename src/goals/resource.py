@@ -98,10 +98,10 @@ class Resource(Goal):
         #     print(group)
 
         if len(boundary) > 0:
-            has_t = boundary[0][2] == 1
-            has_q = boundary[0][3] == 1
-            has_x = boundary[0][4] == 1
-            has_b = boundary[0][5] == 1
+            has_t = boundary[0][0] == 1
+            has_q = boundary[0][1] == 1
+            has_x = boundary[0][2] == 1
+            has_b = boundary[0][3] == 1
         else:
             has_t = True
             has_q = True

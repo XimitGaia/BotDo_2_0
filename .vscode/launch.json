@@ -6,6 +6,7 @@
       "type": "python",
       "request": "launch",
       "program": "${workspaceFolder}/api.py",
+      // "program": "${workspaceFolder}/database/teste.py",
       "console": "externalTerminal"
     }
   ]

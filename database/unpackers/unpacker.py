@@ -1,8 +1,8 @@
 import sys
+import io, os, json
 from pathlib import Path
 path = Path(__file__).resolve()
-sys.path.append(str(path.parents[2]))
-import io, sys, os, json
+sys.path.append(str(path.parents[0]))
 from pydofus.d2o import D2OReader, InvalidD2OFile
 from pydofus.d2i import D2I, InvalidD2IFile
 from pydofus.d2p import D2PReader, InvalidD2PFile
@@ -164,4 +164,4 @@ if __name__ == '__main__':
     # a.dlm_dump(r"C:\Users\Lucas\Desktop\Dofus Decompiler\PyDofus-master\input\188746758.dlm",r"C:\Users\Lucas\Desktop\Dofus Decompiler\PyDofus-master\input")
     b = a.dofus_open('MapPositions.d2o')
     for i in b:
-        print(i)
+        print(i.get("id"))

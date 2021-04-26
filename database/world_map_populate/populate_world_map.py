@@ -101,7 +101,7 @@ for map in map_positions:
     xcoord = int(map.get("posX"))
     ycoord = int(map.get("posY"))
     world_map_zone = int(map.get("worldMap"))
-    world_map_id = int(map.get('id'))
+    world_map_id = map_id
     data = (world_map_id, xcoord, ycoord, 1, 1, 1, 1, world_map_zone)
     thread = threading.Thread(target=insert_and_process, args=(data, map_id))
     thread_list.append(thread)
@@ -115,3 +115,5 @@ for thread in thread_list:
     thread.join()
 finished_inserting = True
 thread_insert.join()
+
+print("Creating")

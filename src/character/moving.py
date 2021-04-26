@@ -110,7 +110,7 @@ class Moving:
                 )
                 self.database.update_world_map(row=row, column_name=direction)
                 self.register_path_to_move(self.current_pos, self.moving_to)
-                return True
+                return [True, None]
             self.move_to(direction=direction)
             len_movement_queue = len(self.movement_queue)
             return [len_movement_queue > 0, next_pos]
@@ -121,7 +121,7 @@ class Moving:
         if len(result) == 0:
             return (1, 1, 1, 1)
         #print(result[0][2:-1])
-        return result[0][2:-1]
+        return result[0]
 
     def djikstra(self, start, destiny):
         processed_maps = list()
