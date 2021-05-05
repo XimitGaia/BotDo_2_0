@@ -5,8 +5,8 @@
       "name": "Bot",
       "type": "python",
       "request": "launch",
-      "program": "${workspaceFolder}/api.py",
-      // "program": "${workspaceFolder}/database/teste.py",
+      // "program": "${workspaceFolder}/api.py",
+      "program": "${workspaceFolder}/database/populate_monsters_and_drops.py",
       "console": "externalTerminal"
     }
   ]

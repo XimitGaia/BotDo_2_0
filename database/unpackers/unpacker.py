@@ -1,5 +1,6 @@
 import sys
 import io, os, json
+import shutil
 from pathlib import Path
 path = Path(__file__).resolve()
 sys.path.append(str(path.parents[0]))
@@ -10,7 +11,7 @@ from pydofus.swl import SWLReader, InvalidSWLFile
 from pydofus.ele import ELE, InvalidELEFile
 from pydofus.dlm import DLM, InvalidDLMFile
 dofus_path = f"{os.getenv('LOCALAPPDATA')}{os.sep}Ankama{os.sep}zaap{os.sep}dofus"
-output_base_path = f'{path.parents[1]}{os.sep}dofus_json'
+output_base_path = f'{path.parents[1]}{os.sep}jsons'
 
 
 class Unpacker:
@@ -110,7 +111,6 @@ class Unpacker:
                         data = dlm.read()
                         with open(f'{output_path}{os.sep}{name.replace("dlm", "json")}', "w") as json_output:
                             json.dump(data, json_output, indent=2)
-
                     else:
                         with open(f'{output_path}{os.sep}{name}', "wb") as file_output:
                             file_output.write(specs["binary"])
@@ -155,7 +155,27 @@ class Unpacker:
                             os.mkdir(output_path)
                         Unpacker.d2p_dump(file_path, output_path)
 
+    @staticmethod
+    def dump_dofus_maps():
+        maps_path = f'{dofus_path}{os.sep}content{os.sep}maps'
+        for file_name in os.listdir(maps_path):
+            if Unpacker.is_map_decompiled(file_name):
+                continue
+            if file_name.endswith(".d2p"):
+                Unpacker.d2p_dump(f'{maps_path}{os.sep}{file_name}', f'{output_base_path}{os.sep}maps')
 
+    @staticmethod
+    def is_map_decompiled(file_name):
+        for folder_name in os.listdir(f'{output_base_path}{os.sep}maps'):
+            if folder_name + '.d2p' == file_name:
+                return True
+        return False
+
+    @staticmethod
+    def clear_output():
+        shutil.rmtree(output_base_path)
+        os.makedirs(output_base_path)
+        os.makedirs(f'{output_base_path}{os.sep}maps')
 
 if __name__ == '__main__':
     print(os.path.dirname(os.path.realpath(__file__)))

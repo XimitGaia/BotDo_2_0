@@ -22,7 +22,6 @@ class Search:
         bright_tolerance: float = 0.07,
         trainer: bool = False,
         resize: tuple = (0,0)
-
     )-> list:#screen = (x1,y1,x2,y2) rectangle top left, button right, all others parameters variate between 0 and 1
         if trainer:
             start_time = time.time()

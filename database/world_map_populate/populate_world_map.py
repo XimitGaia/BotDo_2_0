@@ -79,7 +79,7 @@ def consume_queue(queue: Queue):
         if elemente_type == 'map':
             database.insert_world_map(to_insert)
         else:
-            database.insert_haverstable_cell_cordinate(to_insert)
+            database.insert_harvestables_cells(to_insert)
         if started_all_threads:
             print(f'Remaining itens: {queue.qsize()}', end='\r')
         # if queue.qsize() == 0:
@@ -100,7 +100,7 @@ for map in map_positions:
     map_id = int(map.get('id'))
     xcoord = int(map.get("posX"))
     ycoord = int(map.get("posY"))
-    world_map_zone = int(map.get("worldMap"))
+    sub_area_id = int(map.get("subAreaId"))
     world_map_id = map_id
     data = (world_map_id, xcoord, ycoord, 1, 1, 1, 1, world_map_zone)
     thread = threading.Thread(target=insert_and_process, args=(data, map_id))

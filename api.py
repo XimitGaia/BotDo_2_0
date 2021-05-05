@@ -34,7 +34,7 @@ def home():
 @app.route('/bot_api/resources', methods=['GET'])
 def get_resources():
     database = Database()
-    sql = f"""SELECT * FROM job_resources_list"""
+    sql = f"""SELECT * FROM harvestables_list"""
     resources = database.query(sql=sql)
     return jsonify(resources)
 

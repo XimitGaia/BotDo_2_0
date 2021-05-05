@@ -41,16 +41,6 @@ class Database:
     def check_or_create_tables(self):
         cursor = self.connection.cursor()
         tables = {
-            'world_list_zone':  {
-                'temp': False,
-                'sql':  """
-                    CREATE TABLE *table*(
-                        id integer PRIMARY KEY AUTOINCREMENT,
-                        zone_name TEXT UNIQUE
-                    );
-                """,
-                'with_index': False
-            },
             'job_type':  {
                 'temp': False,
                 'sql':  """
@@ -73,17 +63,7 @@ class Database:
                 """,
                 'with_index': False
             },
-            'images':  {
-                'temp': False,
-                'sql':  """
-                    CREATE TABLE *table*(
-                        id integer PRIMARY KEY AUTOINCREMENT,
-                        path_from_root TEXT UNIQUE
-                    );
-                """,
-                'with_index': False
-            },
-            'job_resources_list':  {
+            'harvestables_list':  {
                 'temp': False,
                 'sql':  """
                     CREATE TABLE *table*(
@@ -94,22 +74,6 @@ class Database:
                         images_id integer,
                         FOREIGN KEY(job_id) REFERENCES jobs(id)
                         FOREIGN KEY(images_id) REFERENCES images(id)
-                    );
-                """,
-                'with_index': False
-            },
-            'job_resources_location':  {
-                'temp': False,
-                'sql':  """
-                    CREATE TABLE *table*(
-                        id integer PRIMARY KEY AUTOINCREMENT,
-                        x INTEGER,
-                        y INTEGER,
-                        resources_id,
-                        resources_quantity integer,
-                        world_list_zone_id integer,
-                        FOREIGN KEY(resources_id) REFERENCES job_resources_list(id)
-                        FOREIGN KEY(world_list_zone_id) REFERENCES world_list_zone(id)
                     );
                 """,
                 'with_index': False
@@ -138,7 +102,7 @@ class Database:
                         can_switch_pos INTEGER,
                         can_switch_pos_on_target INTEGER,
                         can_be_carried INTEGER
-                    )
+                    );
                 """,
                 'with_index': False
             },
@@ -152,7 +116,7 @@ class Database:
                         monster_id INTEGER,
                         drop_rate REAL,
                         FOREIGN KEY(monster_id) REFERENCES monsters(id)
-                    )
+                    );
                 """,
                 'with_index': False
             },
@@ -167,8 +131,58 @@ class Database:
                         left INTEGER,
                         bottom INTEGER,
                         right INTEGER,
-                        world_list_zone_id INTEGER
-                    )
+                        sub_area_id INTEGER,
+                        is_surface_map INTEGER
+                    );
+                """,
+                'with_index': False
+            },
+            'surface_sub_areas': {
+                'temp': False,
+                'sql': """
+                    CREATE TABLE *table*(
+                        sub_area_id integer PRIMARY KEY,
+                        sub_area_name TEXT
+                    );
+                """,
+                'with_index': False
+            },
+            'interactives': {
+                'temp': False,
+                'sql': """
+                    CREATE TABLE *table*(
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        world_map_id INTEGER,
+                        element_id INTEGER,
+                        type TEXT,
+                        cell_id INTEGER,
+                        off_set_x INTEGER,
+                        off_set_y INTEGER,
+                        FOREIGN KEY(world_map_id) REFERENCES world_map(id)
+                    );
+                """,
+                'with_index': False
+            },
+            'monsters_location': {
+                'temp': False,
+                'sql': """
+                    CREATE TABLE *table*(
+                        world_map_id INTEGER,
+                        monster_id INTEGER REFERENCES monsters(monster_id),
+                        FOREIGN KEY(world_map_id) REFERENCES world_map(id)
+                    );
+                """,
+                'with_index': False
+            },
+            'connections': {
+                'temp': False,
+                'sql': """
+                    CREATE TABLE *table*(
+                        destiny INTEGER,
+                        interactive_id INTEGER,
+                        FOREIGN KEY(interactive_id) REFERENCES interactives(id),
+                        FOREIGN KEY(destiny) REFERENCES world_map(id)
+                    );
                 """,
                 'with_index': False
             },
@@ -179,24 +193,34 @@ class Database:
                         name TEXT UNIQUE,
                         x INTEGER,
                         y INTEGER
-                    )
+                    );
                 """,
                 'with_index': False
             },
-            'haverstable_cell_cordinate': {
+            'harvestables_cells': {
                 'temp': False,
                 'sql': """
                     CREATE TABLE *table*(
-                        id integer PRIMARY KEY AUTOINCREMENT,
-                        cell_number INTEGER,
-                        item_id INTEGER,
-                        world_map_id INTEGER,
-                        FOREIGN KEY(item_id) REFERENCES job_resources_list(id),
-                        FOREIGN KEY(world_map_id) REFERENCES world_map(id)
-                    )
+                        harvestable_id INTEGER,
+                        interactive_id INTEGER,
+                        FOREIGN KEY(interactive_id) REFERENCES interactives(id),
+                        FOREIGN KEY(harvestable_id) REFERENCES harvestables_list(id)
+                    );
                 """,
                 'with_index': False
-            }
+            },
+            # 'harvestables_location': {
+            #     'temp': False,
+            #     'sql': """
+            #         CREATE TABLE *table*(
+            #             item_id INTEGER,
+            #             interactive_id INTEGER,
+            #             FOREIGN KEY(interactive_id) REFERENCES interactives(id),
+            #             FOREIGN KEY(item_id) REFERENCES harvestables_list(id)
+            #         );
+            #     """,
+            #     'with_index': False
+            # }
         }
         for table in tables:
             tables_to_create = [table]
@@ -216,7 +240,6 @@ class Database:
                     self.connection.commit()
         cursor.close()
 
-
     #       ::::::::::: ::::    :::  ::::::::  :::::::::: ::::::::: ::::::::::: ::::::::
     #          :+:     :+:+:   :+: :+:    :+: :+:        :+:    :+:    :+:    :+:    :+:
     #         +:+     :+:+:+  +:+ +:+        +:+        +:+    +:+    +:+    +:+
@@ -225,12 +248,6 @@ class Database:
     #      #+#     #+#   #+#+# #+#    #+# #+#        #+#    #+#    #+#    #+#    #+#
     # ########### ###    ####  ########  ########## ###    ###    ###     ########
 
-
-    def insert_world_list_zone(self, row: tuple):
-        cursor = self.connection.cursor()
-        cursor.execute("""insert OR IGNORE into world_list_zone(zone_name) values(?);""", row)
-        self.connection.commit()
-
     def insert_job_type(self, row: tuple):
         cursor = self.connection.cursor()
         cursor.execute("""INSERT OR IGNORE INTO job_type(job_type) VALUES (?);""", row)
@@ -238,22 +255,12 @@ class Database:
 
     def insert_jobs(self, row: tuple):
         cursor = self.connection.cursor()
-        cursor.execute("""INSERT OR IGNORE INTO jobs(job_name, job_type) VALUES (?, ?);""" , row)
+        cursor.execute("""INSERT OR IGNORE INTO jobs(job_name, job_type) VALUES (?, ?);""", row)
         self.connection.commit()
 
-    def insert_images(self, row: tuple):
+    def insert_harvestables_list(self, row: tuple):
         cursor = self.connection.cursor()
-        cursor.execute("""insert OR IGNORE into images(path_from_root) values(?);""" , row)
-        self.connection.commit()
-
-    def insert_job_resources_list(self, row: tuple):
-        cursor = self.connection.cursor()
-        cursor.execute("""INSERT OR IGNORE INTO job_resources_list(resources_name, resources_level, job_id, images_id) VALUES (?, ?, ?, ?);""", row)
-        self.connection.commit()
-
-    def insert_job_resources_location(self, row: tuple):
-        cursor = self.connection.cursor()
-        cursor.execute("""insert OR IGNORE into job_resources_location (x, y, resources_id, resources_quantity, world_list_zone_id) values(?, ?, ?, ?, ?);""" , row)
+        cursor.execute("""INSERT OR IGNORE INTO harvestables_list(resources_name, resources_level, job_id, images_id) VALUES (?, ?, ?, ?);""", row)
         self.connection.commit()
 
     def insert_monsters(self, row: tuple):
@@ -263,7 +270,7 @@ class Database:
 
     def insert_world_map(self, row: tuple):
         cursor = self.connection.cursor()
-        cursor.execute("""INSERT OR IGNORE INTO world_map(id, x, y,top, left, bottom, right, world_list_zone_id) values(?,?,?,?,?,?,?,?);""", row)
+        cursor.execute("""INSERT OR IGNORE INTO world_map(id, x, y,top, left, bottom, right, sub_area_id, is_surface_map) values(?,?,?,?,?,?,?,?,?);""", row)
         self.connection.commit()
         return cursor.lastrowid
 
@@ -272,15 +279,36 @@ class Database:
         cursor.execute("""INSERT OR IGNORE INTO zaaps(name, x, y) values(?,?,?);""", row)
         self.connection.commit()
 
-    def insert_haverstable_cell_cordinate(self, row: tuple):
+    def insert_harvestables_cells(self, harvestable_id, element_id):
         cursor = self.connection.cursor()
-        cursor.execute("""INSERT OR IGNORE INTO haverstable_cell_cordinate(cell_number, item_id, world_map_id) values(?,?,?);""", row)
+        cursor.execute(
+            f"""
+                INSERT OR IGNORE INTO harvestables_cells(harvestable_id, interactive_id)
+                SELECT {harvestable_id} as harvestable_id, id
+                FROM interactives
+                WHERE element_id = {element_id}
+            """
+        )
         self.connection.commit()
-        return cursor.lastrowid
 
     def insert_drops(self, row: tuple):
         cursor = self.connection.cursor()
         cursor.execute("""INSERT OR IGNORE INTO drops(item_id, item_name, item_level, monster_id, drop_rate) values(?,?,?,?,?);""", row)
+        self.connection.commit()
+
+    def insert_interactives(self, row: tuple):
+        cursor = self.connection.cursor()
+        cursor.execute("""INSERT OR IGNORE INTO interactives(world_map_id, element_id, type, cell_id, off_set_x, off_set_y) values(?,?,?,?,?,?);""", row)
+        self.connection.commit()
+
+    def insert_surface_sub_areas(self, row: tuple):
+        cursor = self.connection.cursor()
+        cursor.execute("""INSERT OR IGNORE INTO surface_sub_areas(sub_area_id, sub_area_name) values(?,?);""", row)
+        self.connection.commit()
+
+    def insert_monster_location(self, row: tuple):
+        cursor = self.connection.cursor()
+        cursor.execute("""INSERT OR IGNORE INTO monsters_location(world_map_id, monster_id) values(?,?);""", row)
         self.connection.commit()
 
     # :::    ::: :::::::::  :::::::::      ::: ::::::::::: ::::::::::
@@ -304,22 +332,15 @@ class Database:
     #  ###     ###     ### ########## ########  ########## ########
 
     def insert_values(self):
-        self.insert_values_world_list_2020_11_02()
         self.insert_values_job_type_2020_11_02()
         self.insert_values_jobs_2020_11_02()
-        self.insert_values_images_2020_11_02()
-        self.insert_value_resources_20_11_02()
+        self.insert_value_harvestables_2021_05_02()
         self.insert_values_zaaps_2021_01_01()
+        self.insert_values_surface_sub_areas_2021_03_05()
 
     def insert_values_executor(self, callback, values_list: list):
         for values in values_list:
             callback(values)
-
-    def insert_values_world_list_2020_11_02(self):
-        values_list =[
-            ('continent_amaknien',)
-        ]
-        self.insert_values_executor(callback=self.insert_world_list_zone, values_list=values_list)
 
     def insert_values_job_type_2020_11_02(self):
         values_list =[
@@ -346,13 +367,7 @@ class Database:
         ]
         self.insert_values_executor(callback=self.insert_jobs, values_list=values_list)
 
-    def insert_values_images_2020_11_02(self):
-        values_list =[
-            ('dummy',),
-        ]
-        self.insert_values_executor(callback=self.insert_images, values_list=values_list)
-
-    def insert_value_resources_20_11_02(self):
+    def insert_value_harvestables_2021_05_02(self):
         values_list =[
             ('Ash', 1, 1, 1),
             ('Chestnut', 20, 1, 1),
@@ -434,7 +449,7 @@ class Database:
             ('Icefish', 200, 5, 1),
             ('Limpet', 200, 5, 1),
         ]
-        self.insert_values_executor(callback=self.insert_job_resources_list, values_list=values_list)
+        self.insert_values_executor(callback=self.insert_harvestables_list, values_list=values_list)
 
     def insert_values_zaaps_2021_01_01(self):
         values_list = [
@@ -480,11 +495,186 @@ class Database:
         ]
         self.insert_values_executor(callback=self.insert_zaaps, values_list=values_list)
 
+    def insert_values_surface_sub_areas_2021_03_05(self):
+        values_list = [
+            (1, "Madrestam Harbour"),
+            (2, "Crackler Mountain"),
+            (3, "Ingalsses' Fields"),
+            (4, "Amakna Forest"),
+            (5, "Gobball Corner"),
+            (6, "Cemetery"),
+            (7, "Cemetery Crypts"),
+            (8, "The Bwork Camp"),
+            (9, "Evil Forest"),
+            (10, "Amakna Village"),
+            (11, "Porco Territory"),
+            (12, "Jelly Peninsula"),
+            (22, "Edge of the Evil Forest"),
+            (23, "Dreggon Peninsula"),
+            (27, "Asse Coast"),
+            (30, "Tainela"),
+            (31, "Amakna Swamps"),
+            (32, "Sufokia"),
+            (33, "Arak-hai Forest"),
+            (43, "Bonta City Walls"),
+            (44, "Bakers' Quarter"),
+            (46, "Butchers' Quarter"),
+            (47, "Smiths' Quarter"),
+            (48, "Lumberjacks' Quarter"),
+            (49, "Handymen's Quarter"),
+            (50, "Tailors' Quarter"),
+            (51, "Jewellers' Quarter"),
+            (54, "Cania Massif"),
+            (55, "The Crow's Domain"),
+            (56, "Cania Lake"),
+            (57, "Desolation of Sidimote"),
+            (59, "Heroes' Cemetery"),
+            (61, "Cemetery of the Tortured"),
+            (62, "Dopple Village"),
+            (68, "Cania Fields"),
+            (69, "Eltneg Wood"),
+            (70, "Rocky Plains"),
+            (71, "Gisgoul"),
+            (76, "Imp Village"),
+            (84, "Trool Fair"),
+            (93, "Turtle Beach"),
+            (95, "Astrub City"),
+            (96, "Astrub Quarry"),
+            (97, "Astrub Forest"),
+            (98, "Astrub Fields"),
+            (102, "Astrub Cemetery"),
+            (103, "Bandit Territory"),
+            (161, "Cawwot Island"),
+            (162, "Gwimace Island"),
+            (163, "Gwavestone Island"),
+            (164, "Isle of the Cwown"),
+            (165, "The Forbidden Jungle"),
+            (166, "The Forest of Masks"),
+            (167, "Skull Path"),
+            (168, "Dark Forest"),
+            (169, "Edge of the Treechnid Forest"),
+            (170, "Scaraleaf Plain"),
+            (173, "Astrub Meadow"),
+            (178, "Lousy Pig Plain"),
+            (179, "Mushd Corner"),
+            (180, "Amakna Castle"),
+            (182, "Breeder Village"),
+            (209, "Minotoror Island"),
+            (230, "Primitive Cemetery"),
+            (231, "Enchanted Lakes"),
+            (232, "Nauseating Swamps"),
+            (233, "Bottomless Swamps"),
+            (234, "Kaliptus Forest"),
+            (235, "Wild Dragoturkey Territory"),
+            (253, "Wild Canyon"),
+            (275, "Agony V'Helley"),
+            (276, "The Goblin Camp"),
+            (277, "Bwork Village"),
+            (279, "Bonta Pasture"),
+            (280, "Brakmar City Walls"),
+            (315, "Dreggon Village"),
+            (320, "Kwismas Haven"),
+            (325, "Crocabulia's Lair"),
+            (334, "Cania Bay"),
+            (335, "Astrub Rocky Inlet"),
+            (451, "Castaway Island"),
+            (453, "Coral Beach"),
+            (454, "Grassy Plains"),
+            (455, "Dark Jungle"),
+            (457, "Bottomless Peat Bog"),
+            (464, "Tree Keeholo Trunk"),
+            (465, "Breeder Village"),
+            (466, "Coastal Village"),
+            (471, "Putrid Peat Bog"),
+            (472, "Tree Keeholo Foliage"),
+            (479, "Kawaii River"),
+            (480, "Low Crackler Mountain"),
+            (481, "Brouce Boulgoure's Clearing"),
+            (482, "Milicluster"),
+            (485, "Amakna Countryside"),
+            (490, "Sufokian Shoreline"),
+            (492, "Passage to Brakmar"),
+            (493, "Blop Fields"),
+            (501, "Isle O'Anstitch"),
+            (502, "Lumberjacks' Quarter"),
+            (503, "Butchers' Quarter"),
+            (505, "Bakers' Quarter"),
+            (506, "Jewellers' Quarter"),
+            (507, "Tailors' Quarter"),
+            (508, "Smiths' Quarter"),
+            (509, "Handymen's Quarter"),
+            (511, "City Centre"),
+            (513, "City Centre"),
+            (517, "Desecrated Highlands"),
+            (518, "Cania Moors"),
+            (519, "Stontusk Desert"),
+            (521, "Cania Peaks"),
+            (522, "Howling Heights"),
+            (523, "Cania Cirque"),
+            (525, "Rocky Roads"),
+            (526, "Caravan Alley"),
+            (530, "Alchemists' Quarter"),
+            (531, "Alchemists' Quarter"),
+            (532, "Fishermen's Quarter"),
+            (533, "Breeders' Quarter"),
+            (534, "Fishermen's Quarter"),
+            (535, "Breeders' Quarter"),
+            (600, "Permafrost Port"),
+            (601, "Frigost Village"),
+            (602, "Icefields"),
+            (603, "Snowbound Village"),
+            (604, "Lonesome Pine Trails"),
+            (605, "Petrified Forest"),
+            (606, "Asparah Gorge"),
+            (608, "Fangs of Glass"),
+            (609, "Alma's Cradle"),
+            (610, "Tears of Ouronigride"),
+            (611, "Mount Scauldron"),
+            (615, "Frozen Lake"),
+            (650, "Sakai Harbour"),
+            (651, "Sakai Plain"),
+            (652, "Snowy Forest"),
+            (757, "Kwismas Land"),
+            (758, "Kwismas Taiga"),
+            (762, "Vulkania Village"),
+            (763, "Traktopel Forest"),
+            (764, "Spartania Forest"),
+            (765, "Stratigra Forest"),
+            (772, "Vulkania"),
+            (797, "Alliance Temple"),
+            (798, "Abandoned Labowatowies"),
+            (799, "Krismahlo Island"),
+            (809, "Kanig Village"),
+            (817, "Abandoned Halls"),
+            (834, "Albatrocious Rock"),
+            (848, "Mysterious Island"),
+            (849, "Stone of the Sacrificed"),
+            (850, "Kramdam Heights"),
+            (872, "Dunes of Bones"),
+            (873, "Castuc Territory"),
+            (874, "Sarakech Port"),
+            (878, "Gorge of Howling Winds"),
+            (879, "Forgotten City"),
+            (883, "Nimaltopia"),
+            (886, "Brakmar Stud Farm"),
+            (887, "Labyrinth of Deleterious Winds"),
+            (889, "Fungus Domain"),
+            (891, "Volcano Forge"),
+            (896, "Magmatic Steps"),
+            (902, "Kingdom of Freezammer"),
+            (941, "Akwadala"),
+            (942, "Plantala"),
+            (943, "Feudala"),
+            (944, "Terrdala"),
+            (945, "Aerdala"),
+            (951, "Pandala Village"),
+            (952, "Nolifis Cemetery"),
+            (955, "Mount Tombs"),
+            (960, "Forbidden Inn")
+        ]
+        self.insert_values_executor(callback=self.insert_surface_sub_areas, values_list=values_list)
+
     # def create_resources_location_view(self):
-
-
-
-
 
 #        ::::::::   :::    ::: :::::::::: :::    ::: :::::::::: ::::::::
 #      :+:    :+:  :+:    :+: :+:        :+:    :+: :+:       :+:    :+:
@@ -505,16 +695,16 @@ class Database:
         rows = cursor.fetchall()
         return rows
 
-    def get_resource_by_name_or_id(self, name_or_id)-> dict:
+    def get_resource_by_name_or_id(self, name_or_id) -> dict:
         sql = ""
         if name_or_id.isdigit():
             sql = f"""
-                SELECT * FROM job_resources_list
+                SELECT * FROM harvestables_list
                 WHERE id = {name_or_id}
             """
         elif type(name_or_id) is str:
             sql = f"""
-                SELECT * FROM job_resources_list
+                SELECT * FROM harvestables_list
                 WHERE resources_name like '%{name_or_id}%'
             """
         if sql == '':
@@ -522,14 +712,14 @@ class Database:
         return self.query(sql)
 
     def get_jobs(self):
-        sql = f"""
+        sql = """
             SELECT * FROM jobs
         """
         return self.query(sql)
 
     def get_resources_by_job_id(self, job_id):
         sql = f"""
-            SELECT * FROM job_resources_list
+            SELECT * FROM harvestables_list
             WHERE job_id = {job_id}
         """
         return self.query(sql)
@@ -552,7 +742,7 @@ class Database:
         return self.query(sql)
 
     def get_zaaps(self):
-        sql = f"""
+        sql = """
             SELECT * FROM zaaps
         """
         return self.query(sql)
@@ -566,10 +756,11 @@ class Database:
         """
         return self.query(sql)
 
-    def get_harvestables_cells_by_map_id(self, harvestables: list, map_id: int):#terminar
+    # terminar
+    def get_harvestables_cells_by_map_id(self, harvestables: list, map_id: int):
         harvestables = [str(i.get('id')) for i in harvestables]
         sql = f"""
-            SELECT hc.cell_number FROM haverstable_cell_cordinate hc
+            SELECT hc.cell_number FROM harvestables_cells hc
             WHERE world_map_id = {map_id} AND
             item_id in ({', '.join(harvestables)})
         """
@@ -582,8 +773,8 @@ class Database:
             SELECT
             hc.cell_number
             FROM world_map wp
-            LEFT JOIN haverstable_cell_cordinate hc on wp.id = hc.world_map_id
-            LEFT JOIN job_resources_list jr on hc.item_id = jr.id
+            LEFT JOIN harvestables_cells hc on wp.id = hc.world_map_id
+            LEFT JOIN harvestables_list jr on hc.item_id = jr.id
             WHERE
             x={pos[0]} and
             y={pos[1]} AND
@@ -592,9 +783,35 @@ class Database:
         """
         return self.query(sql)
 
+    def get_surfice_sub_areas(self):
+        sql =   """
+            SELECT sub_area_id
+            FROM surface_sub_areas
+        """
+        return self.query(sql)
+
+# :::     ::: ::::::::::: :::::::::: :::       :::
+# :+:     :+:     :+:     :+:        :+:       :+:
+# +:+     +:+     +:+     +:+        +:+       +:+
+# +#+     +:+     +#+     +#++:++#   +#+  +:+  +#+
+#  +#+   +#+      +#+     +#+        +#+ +#+#+ +#+
+#   #+#+#+#       #+#     #+#         #+#+# #+#+#
+#     ###     ########### ##########   ###   ###
+
+    def create_harvestables_location_view(self):
+        cursor = self.connection.cursor()
+        cursor.execute(
+            """
+                CREATE VIEW harvestables_location AS
+                SELECT inter.world_map_id, harvest.harvestable_id, count(*) as "quantity" FROM interactives inter JOIN harvestables_cells harvest
+                ON inter.id = harvest.interactive_id
+                WHERE type = "harvestable"
+                GROUP BY world_map_id,harvestable_id
+            """
+        )
+        self.connection.commit()
 
 
-if __name__ == '__main__':
-    database = Database()
-    print   (database.get_boundary((7,23,1)))
-    pass
+# if __name__ == '__main__':
+#     database = Database()
+#     database.insert_interactives((1, 70, 5555, 'lala', 260, 50, 20))
