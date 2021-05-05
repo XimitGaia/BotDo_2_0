@@ -191,8 +191,10 @@ class Database:
                 'sql': """
                     CREATE TABLE *table*(
                         name TEXT UNIQUE,
+                        world_map_id INTEGER,
                         x INTEGER,
-                        y INTEGER
+                        y INTEGER,
+                        FOREIGN KEY(world_map_id) REFERENCES world_map(id)
                     );
                 """,
                 'with_index': False
@@ -276,7 +278,7 @@ class Database:
 
     def insert_zaaps(self, row: tuple):
         cursor = self.connection.cursor()
-        cursor.execute("""INSERT OR IGNORE INTO zaaps(name, x, y) values(?,?,?);""", row)
+        cursor.execute("""INSERT OR IGNORE INTO zaaps(name, world_map_id, x, y) values(?,?,?,?);""", row)
         self.connection.commit()
 
     def insert_harvestables_cells(self, harvestable_id, element_id):
@@ -335,7 +337,6 @@ class Database:
         self.insert_values_job_type_2020_11_02()
         self.insert_values_jobs_2020_11_02()
         self.insert_value_harvestables_2021_05_02()
-        self.insert_values_zaaps_2021_01_01()
         self.insert_values_surface_sub_areas_2021_03_05()
 
     def insert_values_executor(self, callback, values_list: list):
@@ -451,47 +452,48 @@ class Database:
         ]
         self.insert_values_executor(callback=self.insert_harvestables_list, values_list=values_list)
 
-    def insert_values_zaaps_2021_01_01(self):
+    def insert_values_zaaps_2021_05_05(self):
         values_list = [
-            ("Amakna Castle", 3, -5),
-            ("Amakna Village", -2, 0),
-            ("Crackler Mountain", -5, -8),
-            ("Edge of the Evil Forest", -1, 13),
-            ("Gobball Corner", 5, 7),
-            ("Madrestam Harbour", 7, -4),
-            ("Scaraleaf Plain", -1, 24),
-            ("Crocuzko", -83, -15),
-            ("Astrub City", 5, -18),
-            ("Bonta", -32, -56),
-            ("Brakmar", -26, 35),
-            ("Cania Lake", -3, -42),
-            ("Cania Massif", -13, -28),
-            ("Imp Village", -16, -24),
-            ("Kanig Village", 0, -56),
-            ("Lousy Pig Plain", -5, -23),
-            ("Rocky Plains", -17, -47),
-            ("Rocky Roads", -20, -20),
-            ("The Cania Fields", -27, -36),
-            ("Arch of Vili", 15, -20),
-            ("Dopple Village", -34, -8),
-            ("Entrance to Harebourg's Castle", -67, -75),
-            ("Frigost Village", -78, -41),
-            ("The Snowbound Village", -77, -73),
-            ("Breeder Village", -16, 1),
-            ("Turtle Beach", 35, 12),
-            ("Dunes of Bones", 15, -58),
-            ("Canopy Village", -54, 16),
-            ("Coastal Village", -46, 18),
-            ("Pandala Village", 20, -29),
-            ("Caravan Alley", -25, 12),
-            ("Desecrated Highlands", -15, 25),
-            ("Alliance Temple", 13, 35),
-            ("Sufokia", 13, 26),
-            ("Sufokian Shoreline", 10, 22),
-            ("The Cradle", 1, -32),
-            ("Abandoned Labowatowies", 27, -14),
-            ("Cawwot Island", 25, -4),
-            ("Zoth Village", -53, 18)
+            ("Amakna Castle", 68552706, 3, -5),
+            ("Amakna Village", 88213271, -2, 0),
+            ("Crackler Mountain", 185860609, -5, -8),
+            ("Edge of the Evil Forest", 88212746, -1, 13),
+            ("Gobball Corner", 88082704, 5, 7),
+            ("Madrestam Harbour", 68419587, 7, -4),
+            ("Scaraleaf Plain", 88212481, -1, 24),
+            ("Crocuzko", 197920772, -83, -15),
+            ("Astrub City", 191105026, 5, -18),
+            ("Bonta", 147768, -32, -56),
+            ("Brakmar", 144419, -26, 35),
+            ("Cania Lake", 156240386, -3, -42),
+            ("Cania Massif", 165152263, -13, -28),
+            ("Imp Village", 14419207, -16, -24),
+            ("Kanig Village", 126094107, 0, -56),
+            ("Lousy Pig Plain", 84806401, -5, -23),
+            ("Rocky Plains", 147590153, -17, -47),
+            ("Rocky Roads", 164364304, -20, -20),
+            ("The Cania Fields", 142087694, -27, -36),
+            ("Arch of Vili", 202899464, 15, -20),
+            ("Dopple Village", 100270593, -34, -8),
+            ("Entrance to Harebourg's Castle", 108789760, -67, -75),
+            ("Frigost Village", 54172969, -78, -41),
+            ("The Snowbound Village", 54173001, -77, -73),
+            ("Breeder Village", 73400320, -16, 1),
+            ("Turtle Beach", 156762120, 35, 12),
+            ("Dunes of Bones", 173278210, 15, -58),
+            ("Canopy Village", 20973313, -54, 16),
+            ("Coastal Village", 154642, -46, 18),
+            ("Pandala Village", 207619076, 20, -29),
+            ("Caravan Alley", 171967506, -25, 12),
+            ("Desecrated Highlands", 179831296, -15, 25),
+            ("Alliance Temple", 115083777, 13, 35),
+            ("Sufokia", 95422468, 13, 26),
+            ("Sufokian Shoreline", 88085249, 10, 22),
+            ("The Cradle", 120062979, 1, -32),
+            ("Abandoned Labowatowies", 115737095, 27, -14),
+            ("Cawwot Island", 99615238, 25, -4),
+            ("Zoth Village", 28050436, -53, 18),
+            ("Way of Souls", 154010371, -1, -3)
         ]
         self.insert_values_executor(callback=self.insert_zaaps, values_list=values_list)
 

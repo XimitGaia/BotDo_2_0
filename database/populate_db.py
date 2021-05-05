@@ -268,35 +268,18 @@ def is_map_id_similar(map_id, comparation_id):
     return False
 
 
-def modify_neighborhood(map_data: list, comparation_data: list, pos_index: int):
-    if pos_index == 3:
-        map_data[pos_index] = comparation_data[0]
-        comparation_data[5] = map_data[0]
-    elif pos_index == 4:
-        map_data[pos_index] = comparation_data[0]
-        comparation_data[6] = map_data[0]
-    elif pos_index == 5:
-        map_data[pos_index] = comparation_data[0]
-        comparation_data[3] = map_data[0]
-    else:
-        map_data[pos_index] = comparation_data[0]
-        comparation_data[4] = map_data[0]
-
-
 def try_determine_neighborhood(map_data: list, maps_to_compare: list, pos_index: int):
     if map_data[pos_index] == -1:
         possible_neighborhoods = list()
         for comparation_data in maps_to_compare:
             if comparation_data[8] == 1:
-                modify_neighborhood(map_data=map_data, comparation_data=comparation_data, pos_index=pos_index)
-                return 1
+                return 0
             if is_map_id_similar(map_data[0], comparation_data[0]):
                 possible_neighborhoods.append(comparation_data)
         if len(possible_neighborhoods) == 1:
             for comparation_data in maps_to_compare:
                 if comparation_data == possible_neighborhoods[0]:
                     comparation_data[8] = 1
-                    modify_neighborhood(map_data=map_data, comparation_data=comparation_data, pos_index=pos_index)
                     return 1
                 else:
                     comparation_data[8] = 0
@@ -370,11 +353,13 @@ def get_interactive_elements_list():
 
 def get_interactive_type(element_id, off_set_x, off_set_y):
     if str(element_id) in interactives.get('harvestables'):
-        if off_set_x == 0 and off_set_y == 0:
+        if abs(off_set_x) < 20 and abs(off_set_y) < 20:
             return 'harvestable'
         return 'trash'
     if element_id in interactives.get('connectors'):
         return 'connector'
+    if element_id in interactives.get('zaaps'):
+        return 'zaap'
     return 'unknown'
 
 
@@ -435,14 +420,20 @@ def insert_harvestables_cells():
 def create_harvestables_location_view():
     database = Database()
     database.create_harvestables_location_view()
-# thread_insert = threading.Thread(target=consume_queue, args=(queue,))
-# thread_insert.start()
-# monsters_and_drops_inserter()
-# del items
-# world_map_inserter()
-# monster_location_inserter()
-# interactives_inserter()
-# finished_inserting = True
-# thread_insert.join()
-# insert_harvestables_cells()
+
+def insert_zaaps():
+    database = Database()
+    database.insert_values_zaaps_2021_05_05()
+
+thread_insert = threading.Thread(target=consume_queue, args=(queue,))
+thread_insert.start()
+monsters_and_drops_inserter()
+del items
+world_map_inserter()
+monster_location_inserter()
+interactives_inserter()
+finished_inserting = True
+thread_insert.join()
+insert_harvestables_cells()
+insert_zaaps()
 create_harvestables_location_view()
