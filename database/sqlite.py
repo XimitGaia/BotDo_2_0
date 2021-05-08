@@ -131,8 +131,10 @@ class Database:
                         left INTEGER,
                         bottom INTEGER,
                         right INTEGER,
+                        outdoors INTEGER,
                         sub_area_id INTEGER,
-                        is_surface_map INTEGER
+                        area_id INTEGER,
+                        verified TEXT
                     );
                 """,
                 'with_index': False
@@ -211,18 +213,6 @@ class Database:
                 """,
                 'with_index': False
             },
-            # 'harvestables_location': {
-            #     'temp': False,
-            #     'sql': """
-            #         CREATE TABLE *table*(
-            #             item_id INTEGER,
-            #             interactive_id INTEGER,
-            #             FOREIGN KEY(interactive_id) REFERENCES interactives(id),
-            #             FOREIGN KEY(item_id) REFERENCES harvestables_list(id)
-            #         );
-            #     """,
-            #     'with_index': False
-            # }
         }
         for table in tables:
             tables_to_create = [table]
@@ -272,7 +262,7 @@ class Database:
 
     def insert_world_map(self, row: tuple):
         cursor = self.connection.cursor()
-        cursor.execute("""INSERT OR IGNORE INTO world_map(id, x, y,top, left, bottom, right, sub_area_id, is_surface_map) values(?,?,?,?,?,?,?,?,?);""", row)
+        cursor.execute("""INSERT OR IGNORE INTO world_map(id, x, y,top, left, bottom, right, outdoors, sub_area_id, area_id, verified) values(?,?,?,?,?,?,?,?,?,?,?);""", row)
         self.connection.commit()
         return cursor.lastrowid
 
@@ -313,6 +303,11 @@ class Database:
         cursor.execute("""INSERT OR IGNORE INTO monsters_location(world_map_id, monster_id) values(?,?);""", row)
         self.connection.commit()
 
+    def insert_connector(self, row: tuple):
+        cursor = self.connection.cursor()
+        cursor.execute("""INSERT OR IGNORE INTO connections(destiny, interactive_id) values(?,?);""", row)
+        self.connection.commit()
+
     # :::    ::: :::::::::  :::::::::      ::: ::::::::::: ::::::::::
     # :+:    :+: :+:    :+: :+:    :+:   :+: :+:   :+:     :+:
     # +:+    +:+ +:+    +:+ +:+    +:+  +:+   +:+  +:+     +:+
@@ -323,7 +318,7 @@ class Database:
 
     def update_world_map(self, row: tuple, column_name: str):
         cursor = self.connection.cursor()
-        cursor.execute(f"""UPDATE  world_map set {column_name} = ? where x = ? and y = ? and world_list_zone_id = ?;""", row)
+        cursor.execute(f"""UPDATE  world_map set {column_name} = ? where id = ?;""", row)
         self.connection.commit()
 
     #   :+:     :+:   :+: :+:   :+:       :+:    :+: :+:       :+:    :+:
@@ -734,12 +729,27 @@ class Database:
         """
         return self.query(sql)
 
-    def get_boundary(self, pos):
+    def get_primary_neighborhood(self, world_map_id):
         sql = f"""
-                SELECT top, left, bottom, right FROM world_map
-                WHERE x = {pos[0]} and
-                y = {pos[1]}
-                and world_list_zone_id = {pos[2]};
+                SELECT wp.top, wp.left, wp.right, wp.bottom FROM world_map wp
+                WHERE id = {world_map_id};
+        """
+        return self.query(sql)
+
+    def get_connectors(self, world_map_id: int):
+        sql = f"""
+            SELECT conn.destiny, conn.interactive_id FROM connections conn
+            JOIN interactives inter ON inter.id = conn.interactive_id
+            WHERE inter.world_map_id = {world_map_id}
+        """
+        return self.query(sql)
+
+    def get_unknown_interactives_position(self, world_map_id: int):
+        sql = f"""
+            SELECT inter.cell_id, off_set_x, off_set_y FROM interactives inter
+            WHERE world_map_id = {world_map_id}
+            AND (type = "connector" OR type == "unknown")
+            AND inter.id NOT IN (SELECT interactive_id FROM connections)
         """
         return self.query(sql)
 
@@ -785,7 +795,7 @@ class Database:
         """
         return self.query(sql)
 
-    def get_surfice_sub_areas(self):
+    def get_main_world_map_sub_areas(self):
         sql =   """
             SELECT sub_area_id
             FROM surface_sub_areas
@@ -816,4 +826,4 @@ class Database:
 
 # if __name__ == '__main__':
 #     database = Database()
-#     database.insert_interactives((1, 70, 5555, 'lala', 260, 50, 20))
+#     print(database.get_connectors(5506052))

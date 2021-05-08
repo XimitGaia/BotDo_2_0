@@ -1,6 +1,5 @@
 import sys
 import os
-import time
 import threading
 import json
 from pathlib import Path
@@ -40,6 +39,8 @@ def consume_queue(queue: Queue):
             database.insert_monster_location(to_insert)
         elif data_type == 'interactives':
             database.insert_interactives(to_insert)
+        elif data_type == 'connector':
+            database.insert_connector(to_insert)
         if finished_inserting:
             print(f'Remaining itens: {queue.qsize()}', end='\r')
     return None
@@ -159,79 +160,39 @@ def monsters_and_drops_inserter():
 # ###       ### ###     ### ###         ########
 
 
-def get_surfice_sub_areas():
-    database = Database()
-    surfice_sub_areas = [i[0] for i in database.get_surfice_sub_areas()]
-    return surfice_sub_areas
+def get_area_id(sub_area_id: int):
+    for sub_area in sub_areas:
+        if sub_area.get('id') == sub_area_id:
+            return int(sub_area.get('areaId'))
 
 
-mines = [
-        "Shifty Shaft",
-        "Mine",
-        "Canem Cave",
-        "Aminita",
-        "Anto Mine",
-        "Charhole Cavern",
-        "Con Cave",
-        "Diggum Mine",
-        "Dyna Mine",
-        "Faultline Mine",
-        "Ikiki Mine",
-        "Incarnam Mine",
-        "Kamana Mine",
-        "Konk Cave",
-        "Korussant Mine",
-        "Krtek Mine",
-        "Astrub Mines"
-]
+def get_super_area_id(area_id: int):
+    for area in areas:
+        if area.get('id') == area_id:
+            return int(area.get('superAreaId'))
 
 
-def is_mine(name, map_id):
-    if name in mines:
-        return True
-    return False
-
-
-def is_not_surfice(name, sub_area_id, surfice_sub_areas):
-    if sub_area_id not in surfice_sub_areas:
-        return True
-    non_surfice_names = [
-        "Temple",
-        "Room",
-        "Cavern",
-        "Cave",
-        "- Exit",
-        "- Entrance",
-        "Tunnel",
-        "Dungeon"
-    ]
-    for non_surfice_name in non_surfice_names:
-        if non_surfice_name in name:
-            return True
-    return False
-
-
-def get_world_map_data(map_info: dict, surfice_sub_areas: list):
+def get_world_map_data(map_info: dict):
+    sub_area_id = map_info.get("subAreaId")
+    area_id = get_area_id(sub_area_id)
+    super_area_id = get_super_area_id(area_id)
     map_id = int(map_info.get('id'))
     xcoord = map_info.get("posX")
     ycoord = map_info.get("posY")
-    sub_area_id = map_info.get("subAreaId")
-    name = get_name_by_id(map_info.get("nameId"))
-    if name is None:
-        name = " "
-    if is_mine(name, map_id) or is_not_surfice(name, sub_area_id, surfice_sub_areas):
-        data = [map_id, xcoord, ycoord, -1, -1, -1, -1, sub_area_id, 0]
-    else:
-        data = [map_id, xcoord, ycoord, -1, -1, -1, -1, sub_area_id, -1]
-    return data
+    outdoor = map_info.get("outdoor")
+    sub_area_id = sub_area_id
+    area_id = area_id
+    super_area_id = super_area_id
+    return [map_id, xcoord, ycoord, -1, -1, -1, -1, outdoor, sub_area_id, area_id, ''], super_area_id
 
 
 def get_maps_by_position():
     to_return = dict()
     map_positions = unpacker.dofus_open("MapPositions.d2o")
-    surfice_sub_areas = get_surfice_sub_areas()
     for map_info in map_positions:
-        map_data = get_world_map_data(map_info, surfice_sub_areas)
+        map_data, super_area_id = get_world_map_data(map_info)
+        if super_area_id != 0:
+            continue
         pos = (map_data[1], map_data[2])
         if pos not in to_return:
             to_return.update({pos: [map_data]})
@@ -240,90 +201,115 @@ def get_maps_by_position():
     return to_return
 
 
-def surfices_first_filter(grouped_maps: dict):
-    for position in grouped_maps:
-        possible_surfice = list()
-        for map_data in grouped_maps[position]:
-            if map_data[8] == -1:
-                possible_surfice.append(map_data)
-        if len(possible_surfice) == 1:
-            for map_data in grouped_maps[position]:
-                if map_data == possible_surfice[0]:
-                    map_data[8] = 1
-    return grouped_maps
+def modify_neighborhoods(map_data: list, compare_data: list, best_neighborhood: dict, pos_index: int):
+    map_data[pos_index] = best_neighborhood.get('map_id')
+    compare_data[get_reciprocal_index(pos_index)] = {'map_id': map_data[0], 'confidence': best_neighborhood.get("confidence")}
 
 
-def is_map_id_similar(map_id, comparation_id):
-    id_lenght = len(str(map_id))
-    if id_lenght == len(str(comparation_id)):
-        if id_lenght >= 8:
-            if str(map_id)[:-4] == str(comparation_id)[:-4]:
-                return True
-        if id_lenght >= 7:
-            if str(map_id)[:-3] == str(comparation_id)[:-3]:
-                return True
-        if id_lenght >= 5:
-            if str(map_id)[:-2] == str(comparation_id)[:-2]:
-                return True
-    return False
+def get_reciprocal_index(index):
+    if index == 3:
+        return 5
+    if index == 4:
+        return 6
+    if index == 5:
+        return 3
+    if index == 6:
+        return 4
 
 
-def try_determine_neighborhood(map_data: list, maps_to_compare: list, pos_index: int):
-    if map_data[pos_index] == -1:
-        possible_neighborhoods = list()
-        for comparation_data in maps_to_compare:
-            if comparation_data[8] == 1:
+def determine_neighborhood(map_data: list, comparation_maps: list, pos_index: int):
+    possibles_neighborhood = list()
+    index = 0
+    for compare_data in comparation_maps:
+        if compare_data[7]:
+            confidence = 0
+            if map_data[8] == compare_data[8]:
+                confidence += 100
+            if map_data[9] == compare_data[9]:
+                confidence += 50
+            possibles_neighborhood.append({'map_id': compare_data[0], 'confidence': confidence, 'list_index': index})
+        index += 1
+    if len(possibles_neighborhood) > 0:
+        best_neighborhood = max(possibles_neighborhood, key=lambda k: k['confidence'])
+        best_neighborhood_index = best_neighborhood.get('list_index')
+        del best_neighborhood['list_index']
+        to_erase = None
+        possible_neighborhood_relative_confidence = best_neighborhood.get("confidence")
+        if type(map_data[pos_index]) == dict:
+            map_data_confidence = map_data[pos_index].get("confidence")
+            if possible_neighborhood_relative_confidence <= map_data_confidence:
                 return 0
-            if is_map_id_similar(map_data[0], comparation_data[0]):
-                possible_neighborhoods.append(comparation_data)
-        if len(possible_neighborhoods) == 1:
-            for comparation_data in maps_to_compare:
-                if comparation_data == possible_neighborhoods[0]:
-                    comparation_data[8] = 1
-                    return 1
-                else:
-                    comparation_data[8] = 0
+            to_erase = map_data[pos_index].get("map_id")
+        try:
+            actual_neighborhood_confidence = comparation_maps[best_neighborhood_index][get_reciprocal_index(pos_index)].get("confidence")
+        except:
+            actual_neighborhood_confidence = 0
+        if possible_neighborhood_relative_confidence <= actual_neighborhood_confidence:
+            return 0
+        for compare_data in comparation_maps:
+            compare_data_id = compare_data[0]
+            if compare_data_id == to_erase:
+                erase_neighborhood(pos_index=pos_index, compare_data=compare_data)
+            if compare_data_id == best_neighborhood.get('map_id'):
+                modify_neighborhoods(
+                    map_data=map_data,
+                    compare_data=compare_data,
+                    best_neighborhood=best_neighborhood,
+                    pos_index=pos_index
+                )
+                return 1
     return 0
 
 
+
+def erase_neighborhood(pos_index: int, compare_data: list):
+    compare_data[get_reciprocal_index(pos_index)] = {'map_id': -1, 'confidence': 0}
+
+
 def optmize_surfices(grouped_maps):
-    modifications = 99
+    modifications = -1
     while modifications != 0:
-        # print(modifications)
+        print(modifications, '#'*200)
         modifications = 0
-        for y in range(-99, 61):
-            for x in range(-94, 50):
-                pos = (x, y)
-                if pos in grouped_maps:
-                    for map_data in grouped_maps[pos]:
-                        if map_data[8] == 1:
-                            top = (pos[0], pos[1] - 1)
-                            if top in grouped_maps:
-                                modifications += try_determine_neighborhood(map_data=map_data, maps_to_compare=grouped_maps[top], pos_index=3)
-                            else:
-                                map_data[3] = 0
-                            bottom = (pos[0], pos[1] + 1)
-                            if bottom in grouped_maps:
-                                modifications += try_determine_neighborhood(map_data=map_data, maps_to_compare=grouped_maps[bottom], pos_index=5)
-                            else:
-                                map_data[5] = 0
-                            left = (pos[0] - 1, pos[1])
-                            if left in grouped_maps:
-                                modifications += try_determine_neighborhood(map_data=map_data, maps_to_compare=grouped_maps[left], pos_index=4)
-                            else:
-                                map_data[4] = 0
-                            right = (pos[0] + 1, pos[1])
-                            if right in grouped_maps:
-                                modifications += try_determine_neighborhood(map_data=map_data, maps_to_compare=grouped_maps[right], pos_index=6)
-                            else:
-                                map_data[6] = 0
+        for coordinates in grouped_maps:
+            for map_data in grouped_maps.get(coordinates):
+                if map_data[7]:
+                    top = (coordinates[0], coordinates[1] - 1)
+                    bottom = (coordinates[0], coordinates[1] + 1)
+                    left = (coordinates[0] - 1, coordinates[1])
+                    right = (coordinates[0] + 1, coordinates[1])
+                    if top in grouped_maps:
+                        modifications += determine_neighborhood(map_data=map_data, comparation_maps=grouped_maps[top], pos_index=3)
+                    else:
+                        map_data[3] = 0
+                    if bottom in grouped_maps:
+                        modifications += determine_neighborhood(map_data=map_data, comparation_maps=grouped_maps[bottom], pos_index=5)
+                    else:
+                        map_data[5] = 0
+                    if left in grouped_maps:
+                        modifications += determine_neighborhood(map_data=map_data, comparation_maps=grouped_maps[left], pos_index=4)
+                    else:
+                        map_data[4] = 0
+                    if right in grouped_maps:
+                        modifications += determine_neighborhood(map_data=map_data, comparation_maps=grouped_maps[right], pos_index=6)
+                    else:
+                        map_data[6] = 0
+    destroy_confidence_dict(grouped_maps)
+
+
+def destroy_confidence_dict(grouped_maps):
+    for coordinates in grouped_maps:
+        for map_data in grouped_maps.get(coordinates):
+            for index in range(3, 7):
+                if type(map_data[index]) == dict:
+                    map_data[index] = map_data[index].get("map_id")
 
 
 def world_map_inserter():
-    print('Inserting maps... ',end='\r')
+    print('Inserting maps... ', end='\r')
     grouped_maps = get_maps_by_position()
-    surfices_first_filter(grouped_maps)
     optmize_surfices(grouped_maps)
+    print(grouped_maps)
     for pos in grouped_maps:
         for map_data in grouped_maps[pos]:
             queue.put(("world_map", map_data))
@@ -331,7 +317,7 @@ def world_map_inserter():
 
 
 def monster_location_inserter():
-    print('Inserting monster location... ',end='\r')
+    print('Inserting monster location... ', end='\r')
     sub_areas = unpacker.dofus_open("SubAreas.d2o")
     for sub_area in sub_areas:
         for monster_id in sub_area.get("monsters"):
@@ -344,7 +330,7 @@ def monster_location_inserter():
 def get_interactive_elements_list():
     to_return = list()
     elements = unpacker.dofus_open("elements.ele")
-    for element in elements["elements_map"].keys():
+    for element in elements["elements_map"]:
         if "entity_look" in elements["elements_map"][element]:
             to_return.append(elements["elements_map"][element]["id"])
     del elements
@@ -394,10 +380,11 @@ def insert_map_elements(file_path, interactives_ids):
                     element_id = element.get("elementId")
                     off_set_x = element.get("offsetX")
                     off_set_y = element.get("offsetY")
+                    identifier = element.get("identifier")
                     interactive_type = get_interactive_type(element_id, off_set_x, off_set_y)
                     if interactive_type == 'trash':
                         continue
-                    if element_id in interactives_ids:
+                    if element_id in interactives_ids or identifier != 0:
                         interactive_data = (
                             map_id,
                             element_id,
@@ -421,19 +408,25 @@ def create_harvestables_location_view():
     database = Database()
     database.create_harvestables_location_view()
 
+
 def insert_zaaps():
     database = Database()
     database.insert_values_zaaps_2021_05_05()
 
-thread_insert = threading.Thread(target=consume_queue, args=(queue,))
-thread_insert.start()
-monsters_and_drops_inserter()
+
+# thread_insert = threading.Thread(target=consume_queue, args=(queue,))
+# thread_insert.start()
+# monsters_and_drops_inserter()
 del items
+areas = Unpacker.dofus_open('Areas.d2o')
+sub_areas = Unpacker.dofus_open('SubAreas.d2o')
 world_map_inserter()
-monster_location_inserter()
-interactives_inserter()
-finished_inserting = True
-thread_insert.join()
-insert_harvestables_cells()
-insert_zaaps()
-create_harvestables_location_view()
+# del areas
+# del sub_areas
+# monster_location_inserter()
+# interactives_inserter()
+# finished_inserting = True
+# thread_insert.join()
+# insert_harvestables_cells()
+# insert_zaaps()
+# create_harvestables_location_view()
