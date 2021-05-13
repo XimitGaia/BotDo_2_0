@@ -55,22 +55,6 @@ class Resource(Goal):
             }
         return None
 
-    def add_resources_to_collect(self, resouces: list):
-        os.system('cls' if os.name == 'nt' else 'clear')
-        names = list()
-        for resource in resouces:
-            names.append(resource.get('name'))
-        names = ', '.join(names)
-        print(f'SELECTED items: ({names})')
-        print('Digit the name or id of the resource: ')
-        resource = input()
-        if resource == '':
-            return resouces
-        result = self.search_resource(resource)
-        if result:
-            resouces.append(result)
-            self.add_resources_to_collect(resouces)
-
     def get_resources_location(self):
         resources_ids = list()
         for resource in self.resources:
@@ -92,7 +76,7 @@ class Resource(Goal):
         return groups
 
     def get_neighborhood(self, pivo: tuple, positions: list, group: list, level: int = 0):
-        boundary = self.database.get_boundary((pivo[1], pivo[2], 1))
+        boundary = self.database.get_primary_neighborhood((pivo[1], pivo[2], 1))
         # if (pivo[1] == -12 and pivo[2] == 2) or (pivo[1] == -11 and pivo[2] == 2):
         #     print(boundary)
         #     print(group)
@@ -285,9 +269,9 @@ class Resource(Goal):
         self.routine[routine_id] = routine
         if self.routine_type_by_id[routine_id] == 'MOVE':
             self.routine_type_by_id[routine_id] = 'HARVEST'
-            return [MoveAction(x=to_return[0], y=to_return[1])]
+            return [MoveAction(map_id=to_return)]
         else:
-            return [HarvestAction(items=self.resources), MoveAction(x=to_return[0], y=to_return[1])]
+            return [HarvestAction(items=self.resources), MoveAction(map_id=to_return)]
 
     def get_character_routine_id(self, character_name: str) -> int:
         if self.character_routine.get(character_name) is None:

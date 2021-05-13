@@ -111,7 +111,7 @@ class Harvesting:
     def harvest(self):
         pos = self.get_pos()
         if len(pos) < 3:
-            pos = self.screen.get_pos_ocr(option=2) + (1,)
+            pos = self.screen.get_pos_ocr() + (1,)
         cell_ids = self.get_harvestables_cells(pos=pos)
         self.select_all_items(cell_ids)
         wait_time = 4*len(cell_ids)

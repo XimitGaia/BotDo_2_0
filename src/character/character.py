@@ -38,16 +38,16 @@ class Character:
         self.shared_state = state
         self.screen = screen
         self.database = database
+        self.login = Login()
         self.name = None
-        self.login = None
+        self.accout_login = None
         self.password = None
         self.window_id = None
         self.level = None
         self.class_name = None
         self.current_hp = None
-        self.current_pos = None
-        self.current_world_zone = 1 # ajeitar para atualizar com zaaps
-        self.time_controler = {'started_at': 0, 'seconds_to_wait': 0, 'next_pos': None, 'locked_timer': False}
+        self.location_controler = {'current_map': None, 'outdoors': None, 'next_map': None}
+        self.time_controler = {'started_at': 0, 'seconds_to_wait': 0, 'locked_timer': False}
         self.my_zaaps = dict()
         self.primary_status = dict()
         self.res_status = dict()
@@ -56,8 +56,8 @@ class Character:
         self.skills = dict()
         self.queue = list()
         self.load_metadata(account)
-        self.moving = Moving(self.screen, self.database, self.get_pos)
-        self.harvesting = Harvesting(self.screen, self.database, self.get_pos)
+        self.moving = Moving(self.screen, self.database, self.get_map_id)
+        self.harvesting = Harvesting(self.screen, self.database, self.get_map_id)
         self.chat = Chat(screen=self.screen, character_name=self.name)
         self.chat_comands_map = Character.get_chat_comands_map()
         self.add_init_functions_on_queue()
@@ -81,7 +81,7 @@ class Character:
         if not self.time_controler['locked_timer']:
             elapsed_time = time.time() - self.time_controler.get('started_at')
             while elapsed_time < self.time_controler.get('seconds_to_wait'):
-                if self.current_pos[:-1] == self.time_controler['next_pos']:
+                if self.location_controler['map_id'] == self.location_controler['next_map_id']:
                     time.sleep(0.5)
                     break
                 time.sleep(0.05)
@@ -93,13 +93,18 @@ class Character:
         return {
             'hp': {
                 'string': '/g %hp%',
-                'regex': r'(\d+)',
+                'regex': re.compile(r'(\d+)'),
                 'type': 'int'
             },
             'pos': {
                 'string': '/g %pos%',
-                'regex': r'(-?\d{1,2})',
+                'regex': re.compile(r'(-?\d{1,2})'),
                 'type': 'tuple'
+            },
+            'map_id': {
+                'string': '/mapid',
+                'regex': re.compile(r'map:? ?(\d+)'),
+                'type': 'int'
             }
         }
 
@@ -118,15 +123,10 @@ class Character:
     def queue_len(self):
         return len(self.queue)
 
-    def get_character_expected_position(self):
-        if self.time_controler.get('next_pos') is None:
-            return self.current_pos
-        return self.time_controler.get('next_pos') + (self.current_world_zone,)
-
-    def go_to(self, position: tuple):
-        print(f'Moving to {str(position)}')
-        start_position = self.get_character_expected_position()
-        self.moving.register_path_to_move(start=start_position, destiny=position)
+    def go_to(self, map_id: int):
+        print(f'Moving to {str(map_id)}')
+        start_position = self.location_controler['current_map']
+        self.moving.register_path_to_move(start=start_position, destiny=map_id)
         self.queue.append(self.move)
         self.run_function()
 
@@ -137,7 +137,7 @@ class Character:
 
     def add_init_functions_on_queue(self):
         self.queue.append(self.login_dofus)
-        # self.queue.append(self.check_hp_pos)
+        self.queue.append(self.check_hp_map_id)
         if not debug:
             self.queue.append(self.get_zaaps)
 
@@ -168,7 +168,7 @@ class Character:
             regex = self.get_check_regex(str_item)
             cast_type = self.get_check_type(str_item)
             try:
-                regex_return = re.findall(regex, results[count])
+                regex_return = regex.findall(results[count])
                 to_return[str_item] = self.cast_str_by_type(','.join(regex_return), cast_type)
                 count += 1
             except:
@@ -178,37 +178,39 @@ class Character:
         # print(to_return)
         return to_return
 
-    def get_pos(self):
-        if self.is_pos_ocr_with_error():
-            result = self.check_list(str_list=['pos'])
-            self.current_pos = result['pos'] + (self.current_world_zone,)
-        return self.current_pos
+    def is_location_ocr_avaliable(self):
+        return self.shared_state.get('threads_status').get(self.watch_position_thread_name) == 'running'
 
-    def is_pos_ocr_with_error(self):
-        return self.shared_state.get('threads_status').get(self.watch_position_thread_name) == 'error'
+    def is_indoor_diplacement(self):
+        is_next_map_outdoor = self.database.get_map_info(self.location_controler['next_map'])[0][3]
+        return not (self.location_controler['outdoor'] and is_next_map_outdoor)
+
+    def wait_outdoor_connections(self):
+        watch_position_status = self.shared_state.get('threads_status').get(self.watch_position_thread_name)
+        while self.is_indoor_diplacement():
+            if watch_position_status != 'indoor_waiting':
+                self.shared_state.set_thread_status(self.watch_position_thread_name, 'indoor_waiting')
+            time.sleep(0.5)
+        if watch_position_status != 'running':
+            self.shared_state.set_thread_status(self.watch_position_thread_name, 'running')
 
     def watch_position(self):
         self.watch_position_thread_name = f'{self.name}_watch_position_thread'
         self.shared_state.set_thread_status(self.watch_position_thread_name, 'running')
         errors = 0
         while True:
-            if self.shared_state.get('status') == 'paused':
-                self.shared_state.set_thread_status(self.watch_position_thread_name, 'paused')
-                while True:
-                    if self.shared_state.get('status') != 'paused':
-                        self.shared_state.set_thread_status(self.watch_position_thread_name, 'runnning')
-                        break
-                        time.sleep(1)
+            self.shared_state.check_pause_command(thread_name=self.watch_position_thread_name)
+            self.wait_outdoor_connections()
             if self.window_id == self.screen.get_foreground_screen_id():
-                pos = self.screen.get_pos_ocr() + (self.current_world_zone,)
-                if len(pos) < 3:
-                    pos = self.screen.get_pos_ocr(option=2) + (self.current_world_zone,)
-                if len(pos) < 3:
+                pos = self.screen.get_pos_ocr()
+                next_map_pos = self.database.get_map_info(world_map_id=self.location_controler['next_map'])[0][1:3]
+                if len(pos) < 2:
                     errors += 1
                     if errors > 5:
-                        self.shared_state.set_thread_status(self.watch_position_thread_name, 'error')
-                else:
-                    self.current_pos = pos
+                        if self.shared_state.get('threads_status').get(self.watch_position_thread_name) != 'error':
+                            self.shared_state.set_thread_status(self.watch_position_thread_name, 'error')
+                elif pos == next_map_pos:
+                    self.location_controler['current_map'] = self.location_controler['next_map']
                     errors = 0
             time.sleep(0.1)
 
@@ -224,17 +226,24 @@ class Character:
     # #+#     #+# #+#    #+#    #+#         #+#    #+#    #+# #+#   #+#+# #+#    #+#
     # ###     ###  ########     ###     ########### ########  ###    ####  ########
 
-    def check_hp_pos(self):
-        str_list = ['hp', 'pos']
+    def check_hp_map_id(self):
+        str_list = ['hp', 'map_id']
         result = self.check_list(str_list=str_list)
-        self.current_pos = result['pos'] + (self.current_world_zone,)
+        self.location_controler['current_map'] = result['map_id']
         self.current_hp = result['hp']
 
+    def get_map_id(self):
+        if self.is_location_ocr_avaliable():
+            return self.location_controler['current_map']
+        result = self.check_list(str_list=['map_id'])
+        self.location_controler['current_map'] = result['map_id']
+        self.location_controler['outdoors'] = self.database.get_map_info(result['map_id'])[0]
+        return self.location_controler['current_map']
+
     def login_dofus(self):
-        login = Login()
-        self.window_id = login.run(
+        self.window_id = self.login.run(
             account={
-                'login': self.login,
+                'login': self.accout_login,
                 'password': self.password,
                 'name': self.name
             },
@@ -242,6 +251,14 @@ class Character:
         )
         print(f'Character {self.name} has recived {self.window_id} windows_id')
         time.sleep(12)
+
+    def clean_queue(self):
+        self.queue = list()
+
+    def reconnect(self):
+        self.login.kill_window(window_id=self.window_id)
+        self.clean_queue()
+        self.add_init_functions_on_queue()
 
     def open_close_heavenbag(self):
         keyboard.press_and_release('h')
@@ -287,8 +304,8 @@ class Character:
     def move(self):
         result = self.moving.execute_movement()
         has_more_movements = result[0]
-        next_pos = result[1]
-        self.time_controler['next_pos'] = next_pos
+        next_map_id = result[1][1]
+        self.location_controler['next_map_id'] = next_map_id
         if has_more_movements:
             self.queue.append(self.move)
         self.set_wait_time(8)
@@ -323,7 +340,7 @@ class Character:
         self.class_name = account.get('class')
         self.level = account.get('level')
         self.name = account.get('name')
-        self.login = account.get('login')
+        self.accout_login = account.get('login')
         self.password = account.get('password')
         self.load_primary_status(account.get('primaryCharacteristics'))
         self.load_resistances(account.get('resistences'))

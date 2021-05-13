@@ -10,6 +10,7 @@ from pydofus.d2p import D2PReader, InvalidD2PFile
 from pydofus.swl import SWLReader, InvalidSWLFile
 from pydofus.ele import ELE, InvalidELEFile
 from pydofus.dlm import DLM, InvalidDLMFile
+from pydofus.bin import BinReader
 dofus_path = f"{os.getenv('LOCALAPPDATA')}{os.sep}Ankama{os.sep}zaap{os.sep}dofus"
 output_base_path = f'{path.parents[1]}{os.sep}jsons'
 
@@ -123,6 +124,20 @@ class Unpacker:
         print('')
 
     @staticmethod
+    def bin_unpack(file_path):
+        with open(file_path, 'rb') as bin_file:
+            bin_reader = BinReader(bin_file)
+            bin_data = bin_reader.get_data()
+            return bin_data
+
+    @staticmethod
+    def bin_dump(file_path, output_path):
+        file_name = os.path.basename(file_path)
+        data = Unpacker.bin_unpack(file_path)
+        with open(f'{output_path}{os.sep}{file_name.replace("bin", "json")}', "w") as json_output:
+            json.dump(data, json_output, indent=2)
+
+    @staticmethod
     def dofus_open(file_name):
         for root, dirs, files in os.walk(dofus_path):
             for file in files:
@@ -134,6 +149,10 @@ class Unpacker:
                         return Unpacker.d2i_unpack(file_path)
                     if file_name.endswith("ele"):
                         return Unpacker.ele_unpack(file_path)
+                    if file_name.endswith("ele"):
+                        return Unpacker.ele_unpack(file_path)
+                    if file_name.endswith("bin"):
+                        return Unpacker.bin_unpack(file_path)
 
     @staticmethod
     def dofus_dump(file_name):
@@ -154,6 +173,8 @@ class Unpacker:
                         except:
                             os.mkdir(output_path)
                         Unpacker.d2p_dump(file_path, output_path)
+                    if file_name.endswith("bin"):
+                        Unpacker.bin_dump(file_path, output_base_path)
 
     @staticmethod
     def dump_dofus_maps():
@@ -178,10 +199,7 @@ class Unpacker:
         os.makedirs(f'{output_base_path}{os.sep}maps')
 
 if __name__ == '__main__':
-    print(os.path.dirname(os.path.realpath(__file__)))
     a = Unpacker
     # a.d2p_dump(r"C:\Users\Lucas\AppData\Local\Ankama\zaap\dofus\content\maps\maps0.d2p",r"C:\Users\Lucas\Desktop\Dofus Decompiler\PyDofus-master\output")
     # a.dlm_dump(r"C:\Users\Lucas\Desktop\Dofus Decompiler\PyDofus-master\input\188746758.dlm",r"C:\Users\Lucas\Desktop\Dofus Decompiler\PyDofus-master\input")
-    b = a.dofus_open('MapPositions.d2o')
-    for i in b:
-        print(i.get("id"))
+    a.bin_dump("C:\\Users\\Lucas\\Desktop\\worldgraph.bin", "C:\\Users\\Lucas\\Desktop")

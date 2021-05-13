@@ -12,6 +12,7 @@ images = {
     'icon_star_normal.png': (255, 0, 255, 255),
     'bg_light.png': (255, 255, 255, 255),
     'window_separator_black_horizontal.png': (0, 0, 0, 0),
+    'pin_mark_red.png': (255, 0, 255, 255)
 }
 
 xml_elements = {
@@ -202,17 +203,20 @@ def change_dat_files():
             dat_file.write(data)
 
 
-print('Changing images...', end='\r')
-change_all_images()
-print('Changing images   Ok')
-print('Changing xml files...', end='\r')
-change_xml_colors()
-print('Changing xml files   Ok')
-print('Changing css files...', end='\r')
-change_css_files()
-print('Changing css files   Ok')
-print('Changing dat files...', end='\r')
-change_dat_files()
-print('Changing dat files   Ok')
+def replace_files():
+    print('Changing images...', end='\r')
+    change_all_images()
+    print('Changing images   Ok')
+    print('Changing xml files...', end='\r')
+    change_xml_colors()
+    print('Changing xml files   Ok')
+    print('Changing css files...', end='\r')
+    change_css_files()
+    print('Changing css files   Ok')
+    print('Changing dat files...', end='\r')
+    change_dat_files()
+    print('Changing dat files   Ok')
 
 
+if __name__ == '__main__':
+    replace_files()

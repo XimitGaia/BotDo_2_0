@@ -10,7 +10,6 @@ from src.tools.replace_files import replace_files
 from database.sqlite import Database
 from src.goals.resource import Resource
 from src.state.state import State
-from src.scheduler.resolver import Resolver
 from src.screen_controllers.screen import Screen
 from src.character.character import Character
 from src.observers.observers import Observers
@@ -36,7 +35,7 @@ def run(api_data):
     print('Initialize Screen module')
     screen = Screen()
     print('Initialize State module')
-    state = dict({'status': 'initializing', 'threads_status':{}, 'turn_of': None})
+    state = dict({'status': 'running', 'threads_status': {}, 'turn_of': None})
     state = State(state=state, debug=False)
     print('Initialize Observers')
     # Observers.pause_trigger_observer(state=state, debug=debug)

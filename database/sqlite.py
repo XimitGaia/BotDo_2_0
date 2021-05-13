@@ -71,9 +71,7 @@ class Database:
                         resources_name TEXT UNIQUE,
                         resources_level integer,
                         job_id integer,
-                        images_id integer,
                         FOREIGN KEY(job_id) REFERENCES jobs(id)
-                        FOREIGN KEY(images_id) REFERENCES images(id)
                     );
                 """,
                 'with_index': False
@@ -127,24 +125,7 @@ class Database:
                         id integer PRIMARY KEY,
                         x INTEGER,
                         y INTEGER,
-                        top INTEGER,
-                        left INTEGER,
-                        bottom INTEGER,
-                        right INTEGER,
-                        outdoors INTEGER,
-                        sub_area_id INTEGER,
-                        area_id INTEGER,
-                        verified TEXT
-                    );
-                """,
-                'with_index': False
-            },
-            'surface_sub_areas': {
-                'temp': False,
-                'sql': """
-                    CREATE TABLE *table*(
-                        sub_area_id integer PRIMARY KEY,
-                        sub_area_name TEXT
+                        outdoors INTEGER
                     );
                 """,
                 'with_index': False
@@ -155,11 +136,10 @@ class Database:
                     CREATE TABLE *table*(
                         id INTEGER PRIMARY KEY AUTOINCREMENT,
                         world_map_id INTEGER,
-                        element_id INTEGER,
                         type TEXT,
-                        cell_id INTEGER,
-                        off_set_x INTEGER,
-                        off_set_y INTEGER,
+                        cell INTEGER,
+                        offset_x INTEGER,
+                        offset_y INTEGER,
                         FOREIGN KEY(world_map_id) REFERENCES world_map(id)
                     );
                 """,
@@ -180,9 +160,13 @@ class Database:
                 'temp': False,
                 'sql': """
                     CREATE TABLE *table*(
+                        origin INTEGER,
                         destiny INTEGER,
-                        interactive_id INTEGER,
-                        FOREIGN KEY(interactive_id) REFERENCES interactives(id),
+                        type INTEGER,
+                        cell INTEGER,
+                        offset_x INTEGER,
+                        offset_y INTEGER,
+                        FOREIGN KEY(origin) REFERENCES world_map(id),
                         FOREIGN KEY(destiny) REFERENCES world_map(id)
                     );
                 """,
@@ -205,9 +189,12 @@ class Database:
                 'temp': False,
                 'sql': """
                     CREATE TABLE *table*(
+                        world_map_id INTEGER,
                         harvestable_id INTEGER,
-                        interactive_id INTEGER,
-                        FOREIGN KEY(interactive_id) REFERENCES interactives(id),
+                        cell INTEGER,
+                        offset_x INTEGER,
+                        offset_y INTEGER,
+                        FOREIGN KEY(world_map_id) REFERENCES world_map(id),
                         FOREIGN KEY(harvestable_id) REFERENCES harvestables_list(id)
                     );
                 """,
@@ -252,7 +239,7 @@ class Database:
 
     def insert_harvestables_list(self, row: tuple):
         cursor = self.connection.cursor()
-        cursor.execute("""INSERT OR IGNORE INTO harvestables_list(resources_name, resources_level, job_id, images_id) VALUES (?, ?, ?, ?);""", row)
+        cursor.execute("""INSERT OR IGNORE INTO harvestables_list(resources_name, resources_level, job_id) VALUES (?, ?, ?);""", row)
         self.connection.commit()
 
     def insert_monsters(self, row: tuple):
@@ -262,7 +249,7 @@ class Database:
 
     def insert_world_map(self, row: tuple):
         cursor = self.connection.cursor()
-        cursor.execute("""INSERT OR IGNORE INTO world_map(id, x, y,top, left, bottom, right, outdoors, sub_area_id, area_id, verified) values(?,?,?,?,?,?,?,?,?,?,?);""", row)
+        cursor.execute("""INSERT OR IGNORE INTO world_map(id, x, y, outdoors) values(?,?,?,?);""", row)
         self.connection.commit()
         return cursor.lastrowid
 
@@ -271,16 +258,9 @@ class Database:
         cursor.execute("""INSERT OR IGNORE INTO zaaps(name, world_map_id, x, y) values(?,?,?,?);""", row)
         self.connection.commit()
 
-    def insert_harvestables_cells(self, harvestable_id, element_id):
+    def insert_harvestables_cells(self, row: tuple):
         cursor = self.connection.cursor()
-        cursor.execute(
-            f"""
-                INSERT OR IGNORE INTO harvestables_cells(harvestable_id, interactive_id)
-                SELECT {harvestable_id} as harvestable_id, id
-                FROM interactives
-                WHERE element_id = {element_id}
-            """
-        )
+        cursor.execute("""INSERT OR IGNORE INTO harvestables_cells(world_map_id, harvestable_id, cell, offset_x, offset_y) values(?,?,?,?,?);""", row)
         self.connection.commit()
 
     def insert_drops(self, row: tuple):
@@ -290,12 +270,7 @@ class Database:
 
     def insert_interactives(self, row: tuple):
         cursor = self.connection.cursor()
-        cursor.execute("""INSERT OR IGNORE INTO interactives(world_map_id, element_id, type, cell_id, off_set_x, off_set_y) values(?,?,?,?,?,?);""", row)
-        self.connection.commit()
-
-    def insert_surface_sub_areas(self, row: tuple):
-        cursor = self.connection.cursor()
-        cursor.execute("""INSERT OR IGNORE INTO surface_sub_areas(sub_area_id, sub_area_name) values(?,?);""", row)
+        cursor.execute("""INSERT OR IGNORE INTO interactives(world_map_id, type, cell, offset_x, offset_y) values(?,?,?,?,?);""", row)
         self.connection.commit()
 
     def insert_monster_location(self, row: tuple):
@@ -305,7 +280,7 @@ class Database:
 
     def insert_connector(self, row: tuple):
         cursor = self.connection.cursor()
-        cursor.execute("""INSERT OR IGNORE INTO connections(destiny, interactive_id) values(?,?);""", row)
+        cursor.execute("""INSERT OR IGNORE INTO connections(origin, destiny, type, cell, offset_x, offset_y) values(?,?,?,?,?,?);""", row)
         self.connection.commit()
 
     # :::    ::: :::::::::  :::::::::      ::: ::::::::::: ::::::::::
@@ -332,7 +307,6 @@ class Database:
         self.insert_values_job_type_2020_11_02()
         self.insert_values_jobs_2020_11_02()
         self.insert_value_harvestables_2021_05_02()
-        self.insert_values_surface_sub_areas_2021_03_05()
 
     def insert_values_executor(self, callback, values_list: list):
         for values in values_list:
@@ -365,85 +339,85 @@ class Database:
 
     def insert_value_harvestables_2021_05_02(self):
         values_list =[
-            ('Ash', 1, 1, 1),
-            ('Chestnut', 20, 1, 1),
-            ('Walnut', 40, 1, 1),
-            ('Oak', 60, 1, 1),
-            ('Bombu', 70, 1, 1),
-            ('Maple', 80, 1, 1),
-            ('Oliviolet', 90, 1, 1),
-            ('Yew', 100, 1, 1),
-            ('Bamboo', 110, 1, 1),
-            ('Cherry', 120, 1, 1),
-            ('Hazel', 130, 1, 1),
-            ('Ebony', 140, 1, 1),
-            ('Kaliptus', 150, 1, 1),
-            ('Hornbeam', 160, 1, 1),
-            ('Dark Bamboo', 170, 1, 1),
-            ('Elm', 180, 1, 1),
-            ('Holy Bamboo', 190, 1, 1),
-            ('Aspen', 200, 1, 1),
-            ('Mahaquany', 200, 1, 1),
-            ('Wheat', 1, 2, 1),
-            ('Barley', 20, 2, 1),
-            ('Oats', 40, 2, 1),
-            ('Hop Hop', 60, 2, 1),
-            ('Flax', 80, 2, 1),
-            ('Rice', 100, 2, 1),
-            ('Rye Rye', 100, 2, 1),
-            ('Malt', 120, 2, 1),
-            ('Hemp', 140, 2, 1),
-            ('Corn', 160, 2, 1),
-            ('Millet', 180, 2, 1),
-            ('Frosteez', 200, 2, 1),
-            ('Quisnoa', 200, 2, 1),
-            ('Nettles', 1, 3, 1),
-            ('Sage', 20, 3, 1),
-            ('Five-Leaf Clover', 40, 3, 1),
-            ('Wild Mint', 60, 3, 1),
-            ('Freyesque Orchid', 80, 3, 1),
-            ('Edelweiss', 100, 3, 1),
-            ('Pandkin Seed', 120, 3, 1),
-            ('Ginseng', 140, 3, 1),
-            ('Belladonna', 160, 3, 1),
-            ('Mandrake', 180, 3, 1),
-            ('Salikronia', 200, 3, 1),
-            ('Snowdrop', 200, 3, 1),
-            ('Iron', 10, 4, 1),
-            ('Copper', 20, 4, 1),
-            ('Bronze', 40, 4, 1),
-            ('Cobalt', 60, 4, 1),
-            ('Manganese', 80, 4, 1),
-            ('Tin', 100, 4, 1),
-            ('Silicate', 100, 4, 1),
-            ('Silver', 120, 4, 1),
-            ('Bauxite', 140, 4, 1),
-            ('Gold', 160, 4, 1),
-            ('Dolomite', 180, 4, 1),
-            ('Obsidian', 200, 4, 1),
-            ('Sepiolite', 200, 4, 1),
-            ('Gudgeon', 1, 5, 1),
-            ('Grawn', 10, 5, 1),
-            ('Trout', 20, 5, 1),
-            ('Crab Surimi', 30, 5, 1),
-            ('Kittenfish', 40, 5, 1),
-            ('Breaded Fish', 50, 5, 1),
-            ('Ediem Carp', 60, 5, 1),
-            ('Shiny Sardine', 70, 5, 1),
-            ('Pike', 80, 5, 1),
-            ('Kralove', 90, 5, 1),
-            ('Eel', 100, 5, 1),
-            ('Grey Sea Bream', 110, 5, 1),
-            ('Perch', 120, 5, 1),
-            ('Blue Ray', 130, 5, 1),
-            ('Monkfish', 140, 5, 1),
-            ('Sickle-Hammerhead Shark', 150, 5, 1),
-            ('Lard Bass', 160, 5, 1),
-            ('Cod', 170, 5, 1),
-            ('Tench', 180, 5, 1),
-            ('Swordfish', 190, 5, 1),
-            ('Icefish', 200, 5, 1),
-            ('Limpet', 200, 5, 1),
+            ('Ash', 1, 1),
+            ('Chestnut', 20, 1),
+            ('Walnut', 40, 1),
+            ('Oak', 60, 1),
+            ('Bombu', 70, 1),
+            ('Maple', 80, 1),
+            ('Oliviolet', 90, 1),
+            ('Yew', 100, 1),
+            ('Bamboo', 110, 1),
+            ('Cherry', 120, 1),
+            ('Hazel', 130, 1),
+            ('Ebony', 140, 1),
+            ('Kaliptus', 150, 1),
+            ('Hornbeam', 160, 1),
+            ('Dark Bamboo', 170, 1),
+            ('Elm', 180, 1),
+            ('Holy Bamboo', 190, 1),
+            ('Aspen', 200, 1),
+            ('Mahaquany', 200, 1),
+            ('Wheat', 1, 2),
+            ('Barley', 20, 2),
+            ('Oats', 40, 2),
+            ('Hop Hop', 60, 2),
+            ('Flax', 80, 2),
+            ('Rice', 100, 2),
+            ('Rye Rye', 100, 2),
+            ('Malt', 120, 2),
+            ('Hemp', 140, 2),
+            ('Corn', 160, 2),
+            ('Millet', 180, 2),
+            ('Frosteez', 200, 2),
+            ('Quisnoa', 200, 2),
+            ('Nettles', 1, 3),
+            ('Sage', 20, 3),
+            ('Five-Leaf Clover', 40, 3),
+            ('Wild Mint', 60, 3),
+            ('Freyesque Orchid', 80, 3),
+            ('Edelweiss', 100, 3),
+            ('Pandkin Seed', 120, 3),
+            ('Ginseng', 140, 3),
+            ('Belladonna', 160, 3),
+            ('Mandrake', 180, 3),
+            ('Salikronia', 200, 3),
+            ('Snowdrop', 200, 3),
+            ('Iron', 10, 4),
+            ('Copper', 20, 4),
+            ('Bronze', 40, 4),
+            ('Cobalt', 60, 4),
+            ('Manganese', 80, 4),
+            ('Tin', 100, 4),
+            ('Silicate', 100, 4),
+            ('Silver', 120, 4),
+            ('Bauxite', 140, 4),
+            ('Gold', 160, 4),
+            ('Dolomite', 180, 4),
+            ('Obsidian', 200, 4),
+            ('Sepiolite', 200, 4),
+            ('Gudgeon', 1, 5),
+            ('Grawn', 10, 5),
+            ('Trout', 20, 5),
+            ('Crab Surimi', 30, 5),
+            ('Kittenfish', 40, 5),
+            ('Breaded Fish', 50, 5),
+            ('Ediem Carp', 60, 5),
+            ('Shiny Sardine', 70, 5),
+            ('Pike', 80, 5),
+            ('Kralove', 90, 5),
+            ('Eel', 100, 5),
+            ('Grey Sea Bream', 110, 5),
+            ('Perch', 120, 5),
+            ('Blue Ray', 130, 5),
+            ('Monkfish', 140, 5),
+            ('Sickle-Hammerhead Shark', 150, 5),
+            ('Lard Bass', 160, 5),
+            ('Cod', 170, 5),
+            ('Tench', 180, 5),
+            ('Swordfish', 190, 5),
+            ('Icefish', 200, 5),
+            ('Limpet', 200, 5)
         ]
         self.insert_values_executor(callback=self.insert_harvestables_list, values_list=values_list)
 
@@ -491,187 +465,6 @@ class Database:
             ("Way of Souls", 154010371, -1, -3)
         ]
         self.insert_values_executor(callback=self.insert_zaaps, values_list=values_list)
-
-    def insert_values_surface_sub_areas_2021_03_05(self):
-        values_list = [
-            (1, "Madrestam Harbour"),
-            (2, "Crackler Mountain"),
-            (3, "Ingalsses' Fields"),
-            (4, "Amakna Forest"),
-            (5, "Gobball Corner"),
-            (6, "Cemetery"),
-            (7, "Cemetery Crypts"),
-            (8, "The Bwork Camp"),
-            (9, "Evil Forest"),
-            (10, "Amakna Village"),
-            (11, "Porco Territory"),
-            (12, "Jelly Peninsula"),
-            (22, "Edge of the Evil Forest"),
-            (23, "Dreggon Peninsula"),
-            (27, "Asse Coast"),
-            (30, "Tainela"),
-            (31, "Amakna Swamps"),
-            (32, "Sufokia"),
-            (33, "Arak-hai Forest"),
-            (43, "Bonta City Walls"),
-            (44, "Bakers' Quarter"),
-            (46, "Butchers' Quarter"),
-            (47, "Smiths' Quarter"),
-            (48, "Lumberjacks' Quarter"),
-            (49, "Handymen's Quarter"),
-            (50, "Tailors' Quarter"),
-            (51, "Jewellers' Quarter"),
-            (54, "Cania Massif"),
-            (55, "The Crow's Domain"),
-            (56, "Cania Lake"),
-            (57, "Desolation of Sidimote"),
-            (59, "Heroes' Cemetery"),
-            (61, "Cemetery of the Tortured"),
-            (62, "Dopple Village"),
-            (68, "Cania Fields"),
-            (69, "Eltneg Wood"),
-            (70, "Rocky Plains"),
-            (71, "Gisgoul"),
-            (76, "Imp Village"),
-            (84, "Trool Fair"),
-            (93, "Turtle Beach"),
-            (95, "Astrub City"),
-            (96, "Astrub Quarry"),
-            (97, "Astrub Forest"),
-            (98, "Astrub Fields"),
-            (102, "Astrub Cemetery"),
-            (103, "Bandit Territory"),
-            (161, "Cawwot Island"),
-            (162, "Gwimace Island"),
-            (163, "Gwavestone Island"),
-            (164, "Isle of the Cwown"),
-            (165, "The Forbidden Jungle"),
-            (166, "The Forest of Masks"),
-            (167, "Skull Path"),
-            (168, "Dark Forest"),
-            (169, "Edge of the Treechnid Forest"),
-            (170, "Scaraleaf Plain"),
-            (173, "Astrub Meadow"),
-            (178, "Lousy Pig Plain"),
-            (179, "Mushd Corner"),
-            (180, "Amakna Castle"),
-            (182, "Breeder Village"),
-            (209, "Minotoror Island"),
-            (230, "Primitive Cemetery"),
-            (231, "Enchanted Lakes"),
-            (232, "Nauseating Swamps"),
-            (233, "Bottomless Swamps"),
-            (234, "Kaliptus Forest"),
-            (235, "Wild Dragoturkey Territory"),
-            (253, "Wild Canyon"),
-            (275, "Agony V'Helley"),
-            (276, "The Goblin Camp"),
-            (277, "Bwork Village"),
-            (279, "Bonta Pasture"),
-            (280, "Brakmar City Walls"),
-            (315, "Dreggon Village"),
-            (320, "Kwismas Haven"),
-            (325, "Crocabulia's Lair"),
-            (334, "Cania Bay"),
-            (335, "Astrub Rocky Inlet"),
-            (451, "Castaway Island"),
-            (453, "Coral Beach"),
-            (454, "Grassy Plains"),
-            (455, "Dark Jungle"),
-            (457, "Bottomless Peat Bog"),
-            (464, "Tree Keeholo Trunk"),
-            (465, "Breeder Village"),
-            (466, "Coastal Village"),
-            (471, "Putrid Peat Bog"),
-            (472, "Tree Keeholo Foliage"),
-            (479, "Kawaii River"),
-            (480, "Low Crackler Mountain"),
-            (481, "Brouce Boulgoure's Clearing"),
-            (482, "Milicluster"),
-            (485, "Amakna Countryside"),
-            (490, "Sufokian Shoreline"),
-            (492, "Passage to Brakmar"),
-            (493, "Blop Fields"),
-            (501, "Isle O'Anstitch"),
-            (502, "Lumberjacks' Quarter"),
-            (503, "Butchers' Quarter"),
-            (505, "Bakers' Quarter"),
-            (506, "Jewellers' Quarter"),
-            (507, "Tailors' Quarter"),
-            (508, "Smiths' Quarter"),
-            (509, "Handymen's Quarter"),
-            (511, "City Centre"),
-            (513, "City Centre"),
-            (517, "Desecrated Highlands"),
-            (518, "Cania Moors"),
-            (519, "Stontusk Desert"),
-            (521, "Cania Peaks"),
-            (522, "Howling Heights"),
-            (523, "Cania Cirque"),
-            (525, "Rocky Roads"),
-            (526, "Caravan Alley"),
-            (530, "Alchemists' Quarter"),
-            (531, "Alchemists' Quarter"),
-            (532, "Fishermen's Quarter"),
-            (533, "Breeders' Quarter"),
-            (534, "Fishermen's Quarter"),
-            (535, "Breeders' Quarter"),
-            (600, "Permafrost Port"),
-            (601, "Frigost Village"),
-            (602, "Icefields"),
-            (603, "Snowbound Village"),
-            (604, "Lonesome Pine Trails"),
-            (605, "Petrified Forest"),
-            (606, "Asparah Gorge"),
-            (608, "Fangs of Glass"),
-            (609, "Alma's Cradle"),
-            (610, "Tears of Ouronigride"),
-            (611, "Mount Scauldron"),
-            (615, "Frozen Lake"),
-            (650, "Sakai Harbour"),
-            (651, "Sakai Plain"),
-            (652, "Snowy Forest"),
-            (757, "Kwismas Land"),
-            (758, "Kwismas Taiga"),
-            (762, "Vulkania Village"),
-            (763, "Traktopel Forest"),
-            (764, "Spartania Forest"),
-            (765, "Stratigra Forest"),
-            (772, "Vulkania"),
-            (797, "Alliance Temple"),
-            (798, "Abandoned Labowatowies"),
-            (799, "Krismahlo Island"),
-            (809, "Kanig Village"),
-            (817, "Abandoned Halls"),
-            (834, "Albatrocious Rock"),
-            (848, "Mysterious Island"),
-            (849, "Stone of the Sacrificed"),
-            (850, "Kramdam Heights"),
-            (872, "Dunes of Bones"),
-            (873, "Castuc Territory"),
-            (874, "Sarakech Port"),
-            (878, "Gorge of Howling Winds"),
-            (879, "Forgotten City"),
-            (883, "Nimaltopia"),
-            (886, "Brakmar Stud Farm"),
-            (887, "Labyrinth of Deleterious Winds"),
-            (889, "Fungus Domain"),
-            (891, "Volcano Forge"),
-            (896, "Magmatic Steps"),
-            (902, "Kingdom of Freezammer"),
-            (941, "Akwadala"),
-            (942, "Plantala"),
-            (943, "Feudala"),
-            (944, "Terrdala"),
-            (945, "Aerdala"),
-            (951, "Pandala Village"),
-            (952, "Nolifis Cemetery"),
-            (955, "Mount Tombs"),
-            (960, "Forbidden Inn")
-        ]
-        self.insert_values_executor(callback=self.insert_surface_sub_areas, values_list=values_list)
-
-    # def create_resources_location_view(self):
 
 #        ::::::::   :::    ::: :::::::::: :::    ::: :::::::::: ::::::::
 #      :+:    :+:  :+:    :+: :+:        :+:    :+: :+:       :+:    :+:
@@ -729,27 +522,27 @@ class Database:
         """
         return self.query(sql)
 
-    def get_primary_neighborhood(self, world_map_id):
+    def get_connectors_by_map_id(self, world_map_id: int):
         sql = f"""
-                SELECT wp.top, wp.left, wp.right, wp.bottom FROM world_map wp
-                WHERE id = {world_map_id};
+            SELECT conn.destiny
+            FROM connections conn
+            WHERE conn.origin = {world_map_id}
         """
         return self.query(sql)
 
-    def get_connectors(self, world_map_id: int):
+    def get_connectors_by_destiny(self, destiny_map_id: int):
         sql = f"""
-            SELECT conn.destiny, conn.interactive_id FROM connections conn
-            JOIN interactives inter ON inter.id = conn.interactive_id
-            WHERE inter.world_map_id = {world_map_id}
+            SELECT conn.origin, conn.destiny, conn.cell, conn.offset_x, conn.offset_y
+            FROM connections conn
+            WHERE conn.destiny = {destiny_map_id}
         """
         return self.query(sql)
 
-    def get_unknown_interactives_position(self, world_map_id: int):
+    def get_map_info(self, world_map_id: int):
         sql = f"""
-            SELECT inter.cell_id, off_set_x, off_set_y FROM interactives inter
-            WHERE world_map_id = {world_map_id}
-            AND (type = "connector" OR type == "unknown")
-            AND inter.id NOT IN (SELECT interactive_id FROM connections)
+            SELECT world.id, world.x, world.y, world.outdoors
+            FROM world_map world
+            WHERE world.id = {world_map_id}
         """
         return self.query(sql)
 
@@ -759,48 +552,14 @@ class Database:
         """
         return self.query(sql)
 
-    def get_map_id(self, pos: tuple, world_list_zone: int):
-        sql = f"""
-            SELECT id FROM world_map
-            WHERE x = {pos[0]} and
-            y = {pos[1]} and
-            world_list_zone = {world_list_zone}
-        """
-        return self.query(sql)
-
-    # terminar
-    def get_harvestables_cells_by_map_id(self, harvestables: list, map_id: int):
-        harvestables = [str(i.get('id')) for i in harvestables]
-        sql = f"""
-            SELECT hc.cell_number FROM harvestables_cells hc
-            WHERE world_map_id = {map_id} AND
-            item_id in ({', '.join(harvestables)})
-        """
-        return self.query(sql)
-
-    def get_harvestables_cells_by_pos_and_world_zone(self, harvestables: list, pos: tuple):
-        harvestables = [str(i.get('id')) for i in harvestables]
-        select = ', '.join(harvestables)
-        sql = f"""
-            SELECT
-            hc.cell_number
-            FROM world_map wp
-            LEFT JOIN harvestables_cells hc on wp.id = hc.world_map_id
-            LEFT JOIN harvestables_list jr on hc.item_id = jr.id
-            WHERE
-            x={pos[0]} and
-            y={pos[1]} AND
-            world_list_zone_id = {pos[2]} AND
-            hc.item_id in ({select});
-        """
-        return self.query(sql)
-
-    def get_main_world_map_sub_areas(self):
-        sql =   """
-            SELECT sub_area_id
-            FROM surface_sub_areas
-        """
-        return self.query(sql)
+    # def get_harvestables_cells_by_map_id(self, harvestables: list, map_id: int):
+    #     harvestables = [str(i.get('id')) for i in harvestables]
+    #     sql = f"""
+    #         SELECT hc.cell_number FROM harvestables_cells hc
+    #         WHERE world_map_id = {map_id} AND
+    #         item_id in ({', '.join(harvestables)})
+    #     """
+    #     return self.query(sql)
 
 # :::     ::: ::::::::::: :::::::::: :::       :::
 # :+:     :+:     :+:     :+:        :+:       :+:
@@ -815,15 +574,16 @@ class Database:
         cursor.execute(
             """
                 CREATE VIEW harvestables_location AS
-                SELECT inter.world_map_id, harvest.harvestable_id, count(*) as "quantity" FROM interactives inter JOIN harvestables_cells harvest
-                ON inter.id = harvest.interactive_id
-                WHERE type = "harvestable"
-                GROUP BY world_map_id,harvestable_id
+                SELECT harv.world_map_id, harv.harvestable_id, count(*) as quantity
+                FROM harvestables_cells harv
+                GROUP BY harv.world_map_id, harv.harvestable_id
             """
         )
         self.connection.commit()
 
 
-# if __name__ == '__main__':
-#     database = Database()
-#     print(database.get_connectors(5506052))
+if __name__ == '__main__':
+    database = Database()
+    neighborhoods = database.get_neighborhood(world_map_id=3333)[0]
+    connections = [i[0] for i in database.get_connectors_by_map_id(world_map_id=183108107)]
+    # print(database.get_connectors_by_map_id(183108107))

@@ -2,16 +2,16 @@
 import sys
 import os
 import time
+import threading
 from pathlib import Path
 path = Path(__file__).resolve()
 sys.path.append(str(path.parents[0]))
-
 from src.state.state import State
 from typing import List
 from src.errors.character_errors import JobError, CharacterCriticalError
 from src.goals.goal import Goal
 from src.scheduler.account_and_goal import AccountAndGoal
-import threading
+
 
 
 class Orchestrator:
@@ -37,9 +37,28 @@ class Orchestrator:
             self.accounts_name.append(account_name)
             yield account_name
 
+    def check_internet_status(self):
+        status = self.state.get('status')
+        prints = [
+            "Wainting for internet connection",
+            "Wainting for internet connection.",
+            "Wainting for internet connection..",
+            "Wainting for internet connection..."
+        ]
+        while status == 'disconnected':
+            to_print = prints.pop(0)
+            print(to_print, end='\r')
+            prints.append(to_print)
+            time.sleep(2)
+        if status == 'reconnecting':
+            for account in self.accounts.values():
+                account.reconnect()
+            self.state.set_state(key='status', value='running')
+
     def run(self):
         print('Fudeu ankama')
         for account_name in self.get_accounts_name():
+            self.check_internet_status()
             self.set_account_turn(account_name=account_name)
             self.call_account_run_function(account_name=account_name)
             # PODE TRAVAR CASO NAO RETONE OU FINALIZE MAX TIME PARA RESOLVER
@@ -58,4 +77,3 @@ class Orchestrator:
 
     def set_account_turn(self, account_name: str):
         self.state.set_state(key='turn_of', value=account_name)
-

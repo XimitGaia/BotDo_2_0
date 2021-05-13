@@ -8,6 +8,7 @@ path = Path(__file__).resolve()
 sys.path.append(str(path.parents[0]))
 from sqlite import Database
 from unpackers.unpacker import Unpacker
+import numpy as np
 local_base_path = os.path.dirname(os.path.realpath(__file__))
 
 
@@ -41,8 +42,10 @@ def consume_queue(queue: Queue):
             database.insert_interactives(to_insert)
         elif data_type == 'connector':
             database.insert_connector(to_insert)
+        elif data_type == 'harvestables':
+            database.insert_harvestables_cells(to_insert)
         if finished_inserting:
-            print(f'Remaining itens: {queue.qsize()}', end='\r')
+            print(f'Remaining itens: {queue.qsize()}              ', end='\r')
     return None
 
 
@@ -160,159 +163,18 @@ def monsters_and_drops_inserter():
 # ###       ### ###     ### ###         ########
 
 
-def get_area_id(sub_area_id: int):
-    for sub_area in sub_areas:
-        if sub_area.get('id') == sub_area_id:
-            return int(sub_area.get('areaId'))
-
-
-def get_super_area_id(area_id: int):
-    for area in areas:
-        if area.get('id') == area_id:
-            return int(area.get('superAreaId'))
-
-
 def get_world_map_data(map_info: dict):
-    sub_area_id = map_info.get("subAreaId")
-    area_id = get_area_id(sub_area_id)
-    super_area_id = get_super_area_id(area_id)
     map_id = int(map_info.get('id'))
     xcoord = map_info.get("posX")
     ycoord = map_info.get("posY")
     outdoor = map_info.get("outdoor")
-    sub_area_id = sub_area_id
-    area_id = area_id
-    super_area_id = super_area_id
-    return [map_id, xcoord, ycoord, -1, -1, -1, -1, outdoor, sub_area_id, area_id, ''], super_area_id
-
-
-def get_maps_by_position():
-    to_return = dict()
-    map_positions = unpacker.dofus_open("MapPositions.d2o")
-    for map_info in map_positions:
-        map_data, super_area_id = get_world_map_data(map_info)
-        if super_area_id != 0:
-            continue
-        pos = (map_data[1], map_data[2])
-        if pos not in to_return:
-            to_return.update({pos: [map_data]})
-        else:
-            to_return[pos].append(map_data)
-    return to_return
-
-
-def modify_neighborhoods(map_data: list, compare_data: list, best_neighborhood: dict, pos_index: int):
-    map_data[pos_index] = best_neighborhood.get('map_id')
-    compare_data[get_reciprocal_index(pos_index)] = {'map_id': map_data[0], 'confidence': best_neighborhood.get("confidence")}
-
-
-def get_reciprocal_index(index):
-    if index == 3:
-        return 5
-    if index == 4:
-        return 6
-    if index == 5:
-        return 3
-    if index == 6:
-        return 4
-
-
-def determine_neighborhood(map_data: list, comparation_maps: list, pos_index: int):
-    possibles_neighborhood = list()
-    index = 0
-    for compare_data in comparation_maps:
-        if compare_data[7]:
-            confidence = 0
-            if map_data[8] == compare_data[8]:
-                confidence += 100
-            if map_data[9] == compare_data[9]:
-                confidence += 50
-            possibles_neighborhood.append({'map_id': compare_data[0], 'confidence': confidence, 'list_index': index})
-        index += 1
-    if len(possibles_neighborhood) > 0:
-        best_neighborhood = max(possibles_neighborhood, key=lambda k: k['confidence'])
-        best_neighborhood_index = best_neighborhood.get('list_index')
-        del best_neighborhood['list_index']
-        to_erase = None
-        possible_neighborhood_relative_confidence = best_neighborhood.get("confidence")
-        if type(map_data[pos_index]) == dict:
-            map_data_confidence = map_data[pos_index].get("confidence")
-            if possible_neighborhood_relative_confidence <= map_data_confidence:
-                return 0
-            to_erase = map_data[pos_index].get("map_id")
-        try:
-            actual_neighborhood_confidence = comparation_maps[best_neighborhood_index][get_reciprocal_index(pos_index)].get("confidence")
-        except:
-            actual_neighborhood_confidence = 0
-        if possible_neighborhood_relative_confidence <= actual_neighborhood_confidence:
-            return 0
-        for compare_data in comparation_maps:
-            compare_data_id = compare_data[0]
-            if compare_data_id == to_erase:
-                erase_neighborhood(pos_index=pos_index, compare_data=compare_data)
-            if compare_data_id == best_neighborhood.get('map_id'):
-                modify_neighborhoods(
-                    map_data=map_data,
-                    compare_data=compare_data,
-                    best_neighborhood=best_neighborhood,
-                    pos_index=pos_index
-                )
-                return 1
-    return 0
-
-
-
-def erase_neighborhood(pos_index: int, compare_data: list):
-    compare_data[get_reciprocal_index(pos_index)] = {'map_id': -1, 'confidence': 0}
-
-
-def optmize_surfices(grouped_maps):
-    modifications = -1
-    while modifications != 0:
-        print(modifications, '#'*200)
-        modifications = 0
-        for coordinates in grouped_maps:
-            for map_data in grouped_maps.get(coordinates):
-                if map_data[7]:
-                    top = (coordinates[0], coordinates[1] - 1)
-                    bottom = (coordinates[0], coordinates[1] + 1)
-                    left = (coordinates[0] - 1, coordinates[1])
-                    right = (coordinates[0] + 1, coordinates[1])
-                    if top in grouped_maps:
-                        modifications += determine_neighborhood(map_data=map_data, comparation_maps=grouped_maps[top], pos_index=3)
-                    else:
-                        map_data[3] = 0
-                    if bottom in grouped_maps:
-                        modifications += determine_neighborhood(map_data=map_data, comparation_maps=grouped_maps[bottom], pos_index=5)
-                    else:
-                        map_data[5] = 0
-                    if left in grouped_maps:
-                        modifications += determine_neighborhood(map_data=map_data, comparation_maps=grouped_maps[left], pos_index=4)
-                    else:
-                        map_data[4] = 0
-                    if right in grouped_maps:
-                        modifications += determine_neighborhood(map_data=map_data, comparation_maps=grouped_maps[right], pos_index=6)
-                    else:
-                        map_data[6] = 0
-    destroy_confidence_dict(grouped_maps)
-
-
-def destroy_confidence_dict(grouped_maps):
-    for coordinates in grouped_maps:
-        for map_data in grouped_maps.get(coordinates):
-            for index in range(3, 7):
-                if type(map_data[index]) == dict:
-                    map_data[index] = map_data[index].get("map_id")
+    return (map_id, xcoord, ycoord, outdoor)
 
 
 def world_map_inserter():
-    print('Inserting maps... ', end='\r')
-    grouped_maps = get_maps_by_position()
-    optmize_surfices(grouped_maps)
-    print(grouped_maps)
-    for pos in grouped_maps:
-        for map_data in grouped_maps[pos]:
-            queue.put(("world_map", map_data))
+    map_positions = unpacker.dofus_open("MapPositions.d2o")
+    for map_info in map_positions:
+        queue.put(('world_map', get_world_map_data(map_info=map_info)))
     print('Inserting maps   OK')
 
 
@@ -327,37 +189,54 @@ def monster_location_inserter():
     print('Inserting monster location   OK')
 
 
-def get_interactive_elements_list():
-    to_return = list()
-    elements = unpacker.dofus_open("elements.ele")
-    for element in elements["elements_map"]:
-        if "entity_look" in elements["elements_map"][element]:
-            to_return.append(elements["elements_map"][element]["id"])
-    del elements
-    return to_return
+def set_connections():
+    world_graph = unpacker.dofus_open("worldgraph.bin")
+    edges = world_graph.get('edges')
+    for i in edges:
+        for j in edges[i]:
+            vertex = edges[i][j]
+            origin = int(vertex.get('from').get('map_id'))
+            destiny = int(vertex.get('to').get('map_id'))
+            for transition in vertex.get('transition'):
+                move_type = transition.get('type')
+                cell = transition.get('cell')
+                if move_type == 0:
+                    if cell in np.arange(13, 546, 28):
+                        queue.put(('connector', (origin, destiny, move_type, cell, 72, 0)))
+                    else:
+                        queue.put(('connector', (origin, destiny, move_type, cell, 28, 0)))
+                    continue
+                elif move_type == 2:
+                    if 531 < cell < 546:
+                        queue.put(('connector', (origin, destiny, move_type, cell, 0, 38)))
+                    else:
+                        queue.put(('connector', (origin, destiny, move_type, cell, 0, 16)))
+                    continue
+                elif move_type == 4:
+                    if cell in np.arange(14, 547, 28):
+                        queue.put(('connector', (origin, destiny, move_type, cell, -72, 0)))
+                    else:
+                        queue.put(('connector', (origin, destiny, move_type, cell, -28, 0)))
+                    continue
+                elif move_type == 6:
+                    if 13 < cell < 27:
+                        queue.put(('connector', (origin, destiny, move_type, cell, 0, -30)))
+                    else:
+                        queue.put(('connector', (origin, destiny, move_type, cell, 0, -8)))
+                    continue
+                if origin not in connections:
+                    connections.update({origin: dict()})
+                connections[origin].update({cell: [origin, destiny, move_type, cell]})
 
 
-def get_interactive_type(element_id, off_set_x, off_set_y):
-    if str(element_id) in interactives.get('harvestables'):
-        if abs(off_set_x) < 20 and abs(off_set_y) < 20:
-            return 'harvestable'
-        return 'trash'
-    if element_id in interactives.get('connectors'):
-        return 'connector'
-    if element_id in interactives.get('zaaps'):
-        return 'zaap'
-    return 'unknown'
-
-
-def interactives_inserter():
+def interactives_and_harvestables_inserter():
     print('Insterting interactives... ', end='\r')
-    interactives_ids = get_interactive_elements_list()
     thread_list = list()
     for root, dirs, files in os.walk(f'{local_base_path}{os.sep}jsons{os.sep}maps'):
         for file in files:
             if file.endswith('.json'):
                 file_path = os.path.join(root, file)
-                thread = threading.Thread(target=insert_map_elements, args=(file_path, interactives_ids))
+                thread = threading.Thread(target=insert_map_elements_and_harvestables, args=(file_path,))
                 thread.start()
                 thread_list.append(thread)
     for thread in thread_list:
@@ -365,10 +244,10 @@ def interactives_inserter():
     print('Insterting interactives   OK')
 
 
-def insert_map_elements(file_path, interactives_ids):
+def insert_map_elements_and_harvestables(file_path):
     with open(file_path, 'r') as json_file:
         map_data = json.load(json_file)
-        map_id = map_data.get("mapId")
+        map_id = int(map_data.get("mapId"))
         layers = map_data.get("layers")
         for layer in layers:
             cells = layer.get("cells")
@@ -377,31 +256,44 @@ def insert_map_elements(file_path, interactives_ids):
                 if cell_id == 559:
                     continue
                 for element in cell.get("elements"):
-                    element_id = element.get("elementId")
-                    off_set_x = element.get("offsetX")
-                    off_set_y = element.get("offsetY")
                     identifier = element.get("identifier")
-                    interactive_type = get_interactive_type(element_id, off_set_x, off_set_y)
-                    if interactive_type == 'trash':
+                    if identifier is None:
                         continue
-                    if element_id in interactives_ids or identifier != 0:
-                        interactive_data = (
-                            map_id,
-                            element_id,
-                            interactive_type,
-                            cell_id,
-                            off_set_x,
-                            off_set_y
-                        )
-                        queue.put(('interactives', interactive_data))
+                    if identifier > 0:
+                        element_id = int(element.get("elementId"))
+                        element_data = elements["elements_map"].get(element_id)
+                        if element_data.get('entity_look'):
+                            offset_x = element.get("offsetX")
+                            offset_y = element.get("offsetY") - element.get('altitude') * 10
+                        else:
+                            element_origin = element_data.get('origin')
+                            element_size = element_data.get('size')
+                            offset_x = element.get("offsetX") - element_origin.get('x') + element_size.get('x')//2
+                            offset_y = element.get("offsetY") - element.get('altitude') * 10 - element_origin.get('y') + element_size.get('y')//2
+                        harvestables = interactives.get('harvestables')
+                        if str(element_id) in harvestables:
+                            if abs(offset_x) < 50 and abs(offset_y) < 50:
+                                queue.put(('harvestables', (map_id, harvestables.get(str(element_id)), cell_id, offset_x, offset_y)))
+                            continue
+                        if element_id in interactives.get('zaaps'):
+                            queue.put(('interactives', (map_id, 'zaap', cell_id, offset_x, offset_y)))
+                        if map_id in connections:
+                            if cell_id in connections[map_id]:
+                                connections[map_id][cell_id].extend([offset_x, offset_y])
+                                data = tuple(connections[map_id][cell_id])
+                                queue.put(('connector', data))
+                                del connections[map_id][cell_id]
+                                continue
+                        queue.put(('interactives', (map_id, 'unknown', cell_id, offset_x, offset_y)))
 
 
-def insert_harvestables_cells():
-    print('Adding harvestable_cells values...', end='\r')
-    database = Database()
-    for key, value in interactives.get("harvestables").items():
-        database.insert_harvestables_cells(harvestable_id=value, element_id=int(key))
-    print('Adding harvestable_cells values   OK')
+def insert_connectors():
+    for origin in connections:
+        for cell in connections[origin]:
+            data = tuple(connections[origin][cell])
+            if len(data) == 4:
+                data = data + (0, 0)
+            queue.put(('connector', data))
 
 
 def create_harvestables_location_view():
@@ -417,16 +309,17 @@ def insert_zaaps():
 # thread_insert = threading.Thread(target=consume_queue, args=(queue,))
 # thread_insert.start()
 # monsters_and_drops_inserter()
-del items
-areas = Unpacker.dofus_open('Areas.d2o')
-sub_areas = Unpacker.dofus_open('SubAreas.d2o')
-world_map_inserter()
-# del areas
-# del sub_areas
+# del items
+# world_map_inserter()
+# elements = unpacker.dofus_open('elements.ele')
+# connections = dict()
 # monster_location_inserter()
-# interactives_inserter()
+# set_connections()
+# interactives_and_harvestables_inserter()
+# insert_connectors()
 # finished_inserting = True
 # thread_insert.join()
-# insert_harvestables_cells()
+# print('Finishing...', end='\r')
 # insert_zaaps()
-# create_harvestables_location_view()
+create_harvestables_location_view()
+print('Finishing   OK')

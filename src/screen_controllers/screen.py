@@ -29,9 +29,10 @@ class Screen:
 
     def __init__(self,mode = None):
         self.base_local_path = os.path.dirname(os.path.realpath(__file__))
-        self.markers_path = f'{self.base_local_path}{os.sep}screen_markers{os.sep}'
         self.screen_size = None
         self.get_screen_size()
+        self.game_scale = None
+        self.get_game_scale()
         self.game_active_screen = None
         self.get_game_active_screen()
         self.game_active_screen_width = self.game_active_screen[2] - self.game_active_screen[0]
@@ -46,41 +47,38 @@ class Screen:
         self.get_fight_buttom_region()
         self.chat_input = None
         self.coordinates_region = None
+        self.pos_ocr_regex = re.compile(r'(-?\d{1,2})')
         self.get_coordinates_region()
         self.search = Search()
 
     def get_coordinates_region(self):
-        self.coordinates_region = {
-            1: (
-                self.screen_size[0]*0.00732064421669106,
-                0.0403645833333*self.screen_size[1],
-                self.screen_size[0]*0.053440702781844,
-                0.07421875*self.screen_size[1]
-            ),
-            2: (
-                self.screen_size[0]*0.00732064421669106,
-                0.0403645833333*self.screen_size[1],
-                self.screen_size[0]*0.0344070278184,
-                0.07421875*self.screen_size[1]
-            )
-        }
+        self.coordinates_region = (
+            round(12 * self.game_scale),
+            round(46.666 * self.game_scale),
+            round(161.333 * self.game_scale),
+            round(74.666 * self.game_scale)
+        )
 
-    def get_pos_ocr(self, option=1):
+    def get_pos_ocr(self):
         time.sleep(1)
-        image = ImageGrab.grab(self.coordinates_region[option])
+        image = ImageGrab.grab(self.coordinates_region)
         image = PIL.ImageOps.invert(image)
         config = '--psm 13 --oem 3'
         text = pytesseract.image_to_string(image, config=config)
-        coords = tuple([int(i) for i in re.findall(r'(-?\d{1,2})', text)])
+        coords = tuple([int(i) for i in self.pos_ocr_regex.findall(text)])
         return coords
 
     def get_screen_size(self):
         self.screen_size = ImageGrab.grab('').size
 
+    def get_game_scale(self):
+        width_const = self.screen_size[0]/1280
+        height_const = self.screen_size[1]/1024
+        self.game_scale = min(width_const, height_const)
+
     def get_game_active_screen(self):
-        screen_proportion = 0.704
         action_screen_proportion = 0.709
-        width = self.screen_size[0]*screen_proportion
+        width = (self.screen_size[0] - 86) * self.game_scale
         X = (self.screen_size[0] - width)/2
         high = action_screen_proportion * width
         self.game_active_screen = (
@@ -143,6 +141,7 @@ class Screen:
 
     def get_foreground_screen_id(self):
         return win32gui.GetForegroundWindow()
+
 #        :::::::::      ::: ::::::::::: ::::::::::: :::        ::::::::::            :::   :::    ::::::::  :::::::::  ::::::::::
 #       :+:    :+:   :+: :+:   :+:         :+:     :+:        :+:                  :+:+: :+:+:  :+:    :+: :+:    :+: :+:
 #      +:+    +:+  +:+   +:+  +:+         +:+     +:+        +:+                 +:+ +:+:+ +:+ +:+    +:+ +:+    +:+ +:+
@@ -251,7 +250,6 @@ class Screen:
 #  #+#    #+#    #+#     #+#    #+# #+#        #+#    #+# #+#    #+#
 #  ########     ###     ###    ### ########## ###    ###  ########
 
-
     def get_my_bag_type(self):
         width_constant = 0.195426195426195
         height_constant = 0.0982404692082
@@ -289,7 +287,7 @@ class Screen:
     def bring_character_to_front(character_window_number: int):
         win32gui.SetForegroundWindow(character_window_number)
 
-    def get_chat_content(self,chat_position, ocr_config_number = 1):
+    def get_chat_content(self, chat_position, ocr_config_number=1):
         ocr_configs = {
             1: '--psm 6 --oem 3',
             2: '--psm 7 --oem 3'
@@ -301,8 +299,23 @@ class Screen:
 
 if __name__ == "__main__":
     screen = Screen()
-    # screen.get_pos_ocr()
-    while True:
-        screen.get_pos_ocr()
-        time.sleep(0.3)
-
+    time.sleep(1)
+    s = time.time()
+    # print(screen.get_pos_ocr())
+    # print(time.time() - s)
+    # import pyautogui
+    # xoff =  47
+    # yoff = -27
+    # xoff += -49
+    # yoff += -177
+    pos = screen.map_to_screen(251)
+    # w = ((205 * 0.75)//2)
+    # h = ((253 * 0.75)//2)
+    # print(screen.get_action_screen_y_step())
+    pos = (pos[0] + 72*0.75, pos[1])
+    # # # yoff = (yoff)// 2
+    # # # xoff = (xoff)// 2
+    # # print(pos)
+    # # altitude = 0
+    # # pyautogui.moveTo((pos[0] + w + xoff*screen.game_scale, pos[1] + h + yoff*screen.game_scale))
+    pyautogui.moveTo(pos)

@@ -3,7 +3,7 @@ import sys
 import os
 from pathlib import Path
 path = Path(__file__).resolve()
-sys.path.append(str(path.parents[0]))
+sys.path.append(str(path.parents[2]))
 
 from src.screen_controllers.screen import Screen
 from database.sqlite import Database
@@ -13,200 +13,139 @@ import keyboard
 
 class Moving:
 
-    def __init__(self, screen: Screen, database: Database, get_pos: callable):
+    def __init__(self, screen: Screen, database: Database, get_map_id: callable):
         self.screen = screen
         self.database = database
-        self.next_pos = None
-        self.current_pos = None
+        self.next_map_id = None
+        self.current_map_id = None
         self.moving_to = None
         self.movement_queue = None
-        self.get_pos = get_pos
+        self.get_map_id = get_map_id
         self.max_attemps_to_move = 0
 
-    def move_to(self, direction: str, percentage: int = 50) -> bool:
-        if direction == 'top' or direction == 'bottom':
-            width = (self.screen.game_active_screen[2] - self.screen.game_active_screen[0])
-            xcoord = round(self.screen.game_active_screen[0] + (width * (percentage / 100)))
-            if direction == 'top':
-                ycoord = self.screen.game_active_screen[1] + 5
-                point = (xcoord, ycoord)
-                pyautogui.moveTo(point)
-                keyboard.press('shift')
-                time.sleep(0.3)
-                #checar se tem monstro
-                pyautogui.click(point)
-                keyboard.release('shift')
-                return (xcoord, ycoord)
-            ycoord = self.screen.game_active_screen[3] - 5
-            point = (xcoord, ycoord)
-            pyautogui.moveTo(point)
-            keyboard.press('shift')
-            time.sleep(0.3)
-            #checar se tem monstro
-            pyautogui.click(point)
-            keyboard.release('shift')
-            return (xcoord, ycoord)
-        height = (self.screen.game_active_screen[3] - self.screen.game_active_screen[1])
-        ycoord = self.screen.game_active_screen[1] + (height * (percentage / 100))
-        if direction == 'left':
-            xcoord = self.screen.game_active_screen[0] + 5
-            point = (xcoord, ycoord)
-            pyautogui.moveTo(point)
-            keyboard.press('shift')
-            time.sleep(0.3)
-            #checar se tem monstro
-            pyautogui.click(point)
-            keyboard.release('shift')
-            return (xcoord, ycoord)
-        xcoord = self.screen.game_active_screen[2] - 5
-        point = (xcoord, ycoord)
+    def move_to(self, connection: tuple) -> bool:
+        cell, offset_x, offset_y = connection[2:]
+        offset_x *= self.screen.game_scale
+        offset_y *= self.screen.game_scale
+        point_centered = self.screen.map_to_screen(cell)
+        point = (point_centered[0] + offset_x, point_centered[1] + offset_y)
         pyautogui.moveTo(point)
         keyboard.press('shift')
         time.sleep(0.3)
         #checar se tem monstro
         pyautogui.click(point)
         keyboard.release('shift')
-        return (xcoord, ycoord)
 
-    def get_next_pos(self):
-        position_to_move = None
-        self.current_pos = self.get_pos()
-        #print('next:', self.next_pos, 'current:', self.current_pos)
-        if self.next_pos is None:
-            self.next_pos = self.current_pos[:-1]
-        if self.next_pos == self.current_pos[:-1]:
+    def get_next_move_data(self):
+        next_move_data = None
+        self.current_map_id = self.get_map_id()
+        if self.next_map_id is None:
+            self.next_map_id = self.current_map_id
+        if self.next_map_id == self.current_map_id:
             self.max_attemps_to_move = 0
-            position_to_move = self.pop_movement_queue()
-            self.next_pos = position_to_move
+            next_move_data = self.pop_movement_queue()
+            self.previuous_move_data = next_move_data
+            self.next_map_id = next_move_data[1]
         elif self.max_attemps_to_move < 3:
             self.max_attemps_to_move += 1
-            position_to_move = self.next_pos
-        return position_to_move
+            next_move_data = self.previuous_move_data
+        return next_move_data
 
-    def get_direction(self, pos):
-        delta_x = pos[0] - self.current_pos[0]
-        delta_y = pos[1] - self.current_pos[1]
-        if delta_x == 0:
-            if delta_y > 0:
-                return 'bottom'
-            else:
-                return 'top'
-        else:
-            if delta_x > 0:
-                return 'right'
-            else:
-                return 'left'
-
-    def execute_movement(self) -> bool:
-        next_pos = self.get_next_pos()
-        if next_pos:
-            direction = self.get_direction(next_pos)
+    def execute_movement(self) -> list:
+        next_move_data = self.get_next_move_data()
+        if next_move_data:
             if (self.max_attemps_to_move > 2):
-                row = (
-                    0,
-                    self.current_pos[0],
-                    self.current_pos[1],
-                    1
-                )
-                self.database.update_world_map(row=row, column_name=direction)
-                self.register_path_to_move(self.current_pos, self.moving_to)
+                #ver se tem outro elemento na msm celula como interativo
+                #trocar entre todos antes de deletar connection
+                # row = (
+                #     0,
+                #     self.current_map_id[0],
+                #     self.current_map_id[1],
+                #     1
+                # )
+                # self.database.update_world_map(row=row, column_name=direction)
+                # self.register_path_to_move(self.current_map_id, self.moving_to)
                 return [True, None]
-            self.move_to(direction=direction)
-            len_movement_queue = len(self.movement_queue)
-            return [len_movement_queue > 0, next_pos]
-        return [False, next_pos]
-
-    def get_amakna_allowed_neightborhoods(self, pos):
-        result = self.database.get_boundary(pos)
-        if len(result) == 0:
-            return (1, 1, 1, 1)
-        #print(result[0][2:-1])
-        return result[0]
+            self.move_to(connection=next_move_data)
+            return [len(self.movement_queue) > 0, next_move_data]
+        self.previuous_move_data = None
+        return [False, next_move_data]
 
     def djikstra(self, start, destiny):
-        processed_maps = list()
-        start = start[:-1]
-        # print(f'start: {start}, destiny: {destiny}')
-        djikstra_list = [[start]]
-        index = 0
-        while destiny not in djikstra_list[index]:
-            # print(len(djikstra_list))
-            temp_list_positions = []
-            for position in djikstra_list[index]:
-                processed_maps.append(position)
-                neighborhoods = self.get_amakna_allowed_neightborhoods(position+(1,))
-                top, bottom, left, right = self.get_neighborhoods(position)
-                if neighborhoods[0] == 1:
-                    if top not in processed_maps:
-                        temp_list_positions.append(top)
-                        processed_maps.append(top)
-                if neighborhoods[1] == 1:
-                    if left not in processed_maps:
-                        temp_list_positions.append(left)
-                        processed_maps.append(left)
-                if neighborhoods[2] == 1:
-                    if bottom not in processed_maps:
-                        temp_list_positions.append(bottom)
-                        processed_maps.append(bottom)
-                if neighborhoods[3] == 1:
-                    if right not in processed_maps:
-                        temp_list_positions.append(right)
-                        processed_maps.append(right)
-            djikstra_list.append(temp_list_positions)
-            index += 1
-            if temp_list_positions == []:
-                print("Can't find a way !")
+        processed_maps = [start]
+        path_maps = [[start]]
+        path_maps_index = 0
+        while destiny not in path_maps[-1]:
+            layer = list()
+            a = len(path_maps[path_maps_index])
+            s = time.time()
+            for map_id in path_maps[path_maps_index]:
+                linked_maps = self.get_linked_maps(map_id)
+                for linked_map_id in linked_maps:
+                    if linked_map_id in processed_maps:
+                        continue
+                    processed_maps.append(linked_map_id)
+                    layer.append(linked_map_id)
+            if len(layer) > 0:
+                path_maps.append(layer)
+                # print(layer )
+            else:
                 break
-        # print(f'djikstra_list: {djikstra_list}')
-        return djikstra_list
+            path_maps_index += 1
+        return path_maps
 
-    def get_neighborhoods(self, position: tuple):
-        top = (position[0], position[1] - 1)
-        bottom = (position[0], position[1] + 1)
-        left = (position[0] - 1, position[1])
-        right = (position[0] + 1, position[1])
-        return top, bottom, left, right
+    def get_path(self, start: int, destiny: int):
+        path_maps = self.djikstra(start=start, destiny=destiny)
+        if destiny in path_maps[-1]:
+            return self.djikstra_path_assembler(destiny=destiny, djikstra_list=path_maps)
+        return None
+
+    def get_linked_maps(self, map_id: int):
+        connections = [i[0] for i in self.database.get_connectors_by_map_id(world_map_id=map_id)]
+        return connections
 
     def djikstra_path_assembler(self, destiny, djikstra_list):
-        # print(f'djikstra_path_assembler {str(destiny)}', djikstra_list, '####')
         djikstra_list = djikstra_list[:-1]
         mounted_path = [destiny]
         while len(djikstra_list) > 1:
             layer_positions = djikstra_list.pop()
-            top, bottom, left, right = self.get_neighborhoods(mounted_path[0])
-            if top in layer_positions:
-                mounted_path.insert(0, top)
-                continue
-            elif bottom in layer_positions:
-                mounted_path.insert(0, bottom)
-                continue
-            elif left in layer_positions:
-                mounted_path.insert(0, left)
-                continue
-            elif right in layer_positions:
-                mounted_path.insert(0, right)
-                continue
-        # print(f'mounted_path: {mounted_path}')
-        return mounted_path
+            try:
+                actual_map_id = mounted_path[0][0]
+            except:
+                actual_map_id = mounted_path[0]
+            connectors = self.database.get_connectors_by_destiny(destiny_map_id=actual_map_id)
+            connectors_ids = [i[0] for i in connectors]
+            nex_map_id = int(list(set(connectors_ids) & set(layer_positions))[0])
+            for connector in connectors:
+                if connector[0] == nex_map_id:
+                    mounted_path.insert(0, connector)
+                    break
+        return mounted_path[:-1]
 
     def register_path_to_move(self, start, destiny):
         self.moving_to = destiny
-        djikstra_list = self.djikstra(start=start, destiny=destiny)
-        path = self.djikstra_path_assembler(destiny=destiny, djikstra_list=djikstra_list)
+        path = self.get_path(start=start, destiny=destiny)
+        if not path:
+            print('FUDEU NO PATH, N ACHOU CAMINHO')
         self.movement_queue = path
-        # print('path', path)
         self.max_attemps_to_move = 0
-        self.next_pos = None
+        self.next_map_id = None
 
     def pop_movement_queue(self):
         to_return = self.movement_queue.pop(0)
         return to_return
 
 
-# s = Screen()
-# d = Database()
-# m = Moving(s,d)
-# time.sleep(1)
-# a = m.djikstra((-32,-10),(-32,-48))
-# print(a)
-# print(m.djikstra_path_assembler((-32,-48), a))
+def a():
+    print('i')
+
+
+s = Screen()
+d = Database()
+m = Moving(s, d, a)
+f = m.get_path(191106050, 188745730)
+print(f)
+time.sleep(1)
+for i in f:
+    m.move_to(i)
+    time.sleep(7)

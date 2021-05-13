@@ -12,13 +12,12 @@ from src.character.character import Character
 
 class MoveAction(ActionInterface):
 
-    def __init__(self, x: int, y: int):
-        self.x = x
-        self.y = y
+    def __init__(self, map_id: int):
+        self.map_id = map_id
 
-    def get_position(self):
-        return (self.x, self.y)
+    def get_map_id(self):
+        return self.map_id
 
     def run(self, character: Character):
-        character.go_to(self.get_position())
+        character.go_to(self.get_map_id())
 
