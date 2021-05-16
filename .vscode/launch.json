@@ -5,8 +5,21 @@
       "name": "Bot",
       "type": "python",
       "request": "launch",
-      // "program": "${workspaceFolder}/api.py",
-      "program": "${workspaceFolder}/database/populate_monsters_and_drops.py",
+      "program": "${workspaceFolder}/bot_starter.py",
+      "console": "externalTerminal"
+    },
+    {
+      "name": "sqlite",
+      "type": "python",
+      "request": "launch",
+      "program": "${workspaceFolder}/database/sqlite.py",
+      "console": "externalTerminal"
+    },
+    {
+      "name": "resource",
+      "type": "python",
+      "request": "launch",
+      "program": "${workspaceFolder}/src/goals/resource.py",
       "console": "externalTerminal"
     }
   ]

@@ -485,20 +485,17 @@ class Database:
         rows = cursor.fetchall()
         return rows
 
-    def get_resource_by_name_or_id(self, name_or_id) -> dict:
-        sql = ""
-        if name_or_id.isdigit():
-            sql = f"""
-                SELECT * FROM harvestables_list
-                WHERE id = {name_or_id}
-            """
-        elif type(name_or_id) is str:
-            sql = f"""
-                SELECT * FROM harvestables_list
-                WHERE resources_name like '%{name_or_id}%'
-            """
-        if sql == '':
-            return {}
+    def get_world_map_with_harvestable_indication(self, harvestables_list: list):
+        harvestables_list = [str(i) for i in harvestables_list]
+        sql = f"""SELECT
+                conn.origin,
+                conn.destiny,
+                CASE WHEN harv.quantity IS NULL THEN 0 ELSE harv.quantity END AS quantity,
+                harv.harvestable_id
+                FROM connections conn
+                LEFT JOIN harvestables_location harv
+                ON harv.world_map_id = conn.origin
+                AND harv.harvestable_id IN ({','.join(harvestables_list)})"""
         return self.query(sql)
 
     def get_jobs(self):
@@ -584,6 +581,3 @@ class Database:
 
 if __name__ == '__main__':
     database = Database()
-    neighborhoods = database.get_neighborhood(world_map_id=3333)[0]
-    connections = [i[0] for i in database.get_connectors_by_map_id(world_map_id=183108107)]
-    # print(database.get_connectors_by_map_id(183108107))

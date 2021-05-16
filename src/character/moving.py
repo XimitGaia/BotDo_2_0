@@ -77,8 +77,6 @@ class Moving:
         path_maps_index = 0
         while destiny not in path_maps[-1]:
             layer = list()
-            a = len(path_maps[path_maps_index])
-            s = time.time()
             for map_id in path_maps[path_maps_index]:
                 linked_maps = self.get_linked_maps(map_id)
                 for linked_map_id in linked_maps:
@@ -88,7 +86,6 @@ class Moving:
                     layer.append(linked_map_id)
             if len(layer) > 0:
                 path_maps.append(layer)
-                # print(layer )
             else:
                 break
             path_maps_index += 1
@@ -135,17 +132,18 @@ class Moving:
         to_return = self.movement_queue.pop(0)
         return to_return
 
+if __name__ == '__main__':
+    def a():
+        print('i')
 
-def a():
-    print('i')
 
-
-s = Screen()
-d = Database()
-m = Moving(s, d, a)
-f = m.get_path(191106050, 188745730)
-print(f)
-time.sleep(1)
-for i in f:
-    m.move_to(i)
-    time.sleep(7)
+    s = Screen()
+    d = Database()
+    m = Moving(s, d, a)
+    # f = m.get_path(191105026, 191106048)
+    f = m.get_path(191105024, 153880835)
+    print(f)
+    time.sleep(1)
+    for i in f:
+        m.move_to(i)
+        time.sleep(7)
