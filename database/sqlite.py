@@ -498,6 +498,12 @@ class Database:
                 AND harv.harvestable_id IN ({','.join(harvestables_list)})"""
         return self.query(sql)
 
+    def get_maps_with_harvestable_id(self, harvestable_id):
+        sql = f"""SELECT harv.world_map_id
+            FROM harvestables_location harv
+            WHERE harv.harvestable_id = {harvestable_id}"""
+        return self.query(sql)
+
     def get_jobs(self):
         sql = """
             SELECT * FROM jobs
