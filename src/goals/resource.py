@@ -20,7 +20,6 @@ class Resource(Goal):
         self.database = database
         self.account_number = account_number
         self.resources = resources
-        self.resources_maps = dict()
         self.get_resources_map_dict()
         self.number_of_resources = len(self.resources)
         self.distance = 2
@@ -29,6 +28,14 @@ class Resource(Goal):
 
     def get_next_step(self, character_name: str) -> ActionInterface:
         pass
+
+    #  ::::::::  :::       :::    :::  :::::::: ::::::::::: :::::::::: :::::::::   ::::::::
+    # :+:    :+: :+:       :+:    :+: :+:    :+:    :+:     :+:        :+:    :+: :+:    :+:
+    # +:+        +:+       +:+    +:+ +:+           +:+     +:+        +:+    +:+ +:+
+    # +#+        +#+       +#+    +:+ +#++:++#++    +#+     +#++:++#   +#++:++#:  +#++:++#++
+    # +#+        +#+       +#+    +#+        +#+    +#+     +#+        +#+    +#+        +#+
+    # #+#    #+# #+#       #+#    #+# #+#    #+#    #+#     #+#        #+#    #+# #+#    #+#
+    #  ########  ########## ########   ########     ###     ########## ###    ###  ########
 
     def get_world_maps_by_harvestables(self):
         connections = self.database.get_world_map_with_harvestable_indication(self.resources)
@@ -92,46 +99,46 @@ class Resource(Goal):
             )
             self.index += 1
 
-    def assing_score(self, weight=1):
-        score = len(self.cluster_list)
+    def assing_score(self, criterion: callable, weight=1):
+        score = len(self.cluster_list) + 1
+        last_criterion_value = None
         for cluster in self.cluster_list:
+            actual_criterion_value = criterion(cluster)
+            if actual_criterion_value != last_criterion_value:
+                score -= 1
             cluster['score'] += weight*score
-            score -= 1
+            last_criterion_value = actual_criterion_value
 
-    def get_resources_map_dict(self):
-        for resource in self.resources:
-            maps = [int(i[0]) for i in self.database.get_maps_with_harvestable_id(resource)]
-            self.resources_maps.update({resource: maps})
-
-    def calculate_individual_density(self, resource, cluster):
-        if resource in cluster['quantities']:
-            total_resource_maps_in_cluster = len(set(self.resources_maps[resource]) & set(cluster['maps_id']))
-            return cluster['quantities'][resource]/total_resource_maps_in_cluster
-        return 0
-
-    def gaussian(self, quantities):
-        middle = quantities['total']/(len(quantities) - 1)
-        exponent = sum([(quantities[i] - middle)**2 for i in quantities if i != 'total'])
+    def gaussian(self, cluster):
+        quantities = cluster['quantities']
+        middle = 1/self.number_of_resources #(len(quantities) - 1)
+        exponent = sum([(quantities[i]/quantities['total'] - middle)**2 for i in quantities if i != 'total'])
         return math.exp(-exponent)
 
+    def get_cluster_total_resources(self, cluster):
+        return cluster['quantities']['total']
+
+    def get_cluster_density(self, cluster):
+        return cluster['quantities']['total']/len(cluster['maps_id'])
+
     def rank_clusters(self):
-        #quantity
-        self.cluster_list = sorted(self.cluster_list, key=lambda u: u['quantities']['total'], reverse=True)
-        self.assing_score()
-        #density
-        self.cluster_list = sorted(self.cluster_list, key=lambda u: u['quantities']['total']/len(u['maps_id']), reverse=True)
-        self.assing_score()
-        # self.cluster_list = sorted(self.cluster_list, key=lambda u: self.gaussian(u['quantities']), reverse=True)
-        # #individual density
-        # for resource in self.resources:
-        #     self.cluster_list = sorted(self.cluster_list, key=lambda u: self.calculate_individual_density(resource,u), reverse=True)
-        #     self.assing_score()
-        # self.cluster_list = sorted(self.cluster_list, key=lambda u: u['score'], reverse=True)
+        # quantity
+        self.cluster_list = sorted(self.cluster_list, key=lambda u: self.get_cluster_total_resources(u), reverse=True)
+        self.assing_score(criterion=self.get_cluster_total_resources, weight=2)
+        # density
+        self.cluster_list = sorted(self.cluster_list, key=lambda u: self.get_cluster_density(u), reverse=True)
+        self.assing_score(criterion=self.get_cluster_density)
+        # gaussian
+        self.cluster_list = sorted(self.cluster_list, key=lambda u: self.gaussian(u), reverse=True)
+        self.assing_score(criterion=self.gaussian, weight=2)
+        # sorting
+        self.cluster_list = sorted(self.cluster_list, key=lambda u: u['score'], reverse=True)
+
 
 if __name__ == '__main__':
     database = Database()
-    resource = Resource(database=database, resources=[1, 2, 19], account_number=1)
+    # resource = Resource(database=database, resources=[47, 46, 19], account_number=1)
+    resource = Resource(database=database, resources=[1,2,19], account_number=1)
     resource.get_clusters()
-    # print(sorted(resource.cluster_list, key=lambda u: u['quantities']['total']/len(u['maps_id'])))
     resource.rank_clusters()
     print(resource.cluster_list)
