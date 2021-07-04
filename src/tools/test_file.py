@@ -18,7 +18,7 @@ import pyautogui
 import win32gui
 import colorsys
 import threading
-
+pytesseract.pytesseract.tesseract_cmd = r'C:\Program Files\Tesseract-OCR\tesseract.exe'
 
 class A:
 

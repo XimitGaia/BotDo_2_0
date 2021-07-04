@@ -3,7 +3,7 @@ from PIL import ImageGrab
 import pyautogui
 import time
 import pytesseract
-
+pytesseract.pytesseract.tesseract_cmd = r'C:\Program Files\Tesseract-OCR\tesseract.exe'
 
 class bb:
     def __init__(self,func):

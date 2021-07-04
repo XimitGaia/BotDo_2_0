@@ -20,7 +20,7 @@ class Resource(Goal):
         self.database = database
         self.account_number = account_number
         self.resources = resources
-        self.get_resources_map_dict()
+        #self.get_resources_map_dict()
         self.number_of_resources = len(self.resources)
         self.distance = 2
         self.index = 0

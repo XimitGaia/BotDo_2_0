@@ -8,7 +8,7 @@ import wx
 import cv2
 from PIL import ImageGrab
 import os
-
+pytesseract.pytesseract.tesseract_cmd = r'C:\Program Files\Tesseract-OCR\tesseract.exe'
 
 class Ferramentas:
     

@@ -20,7 +20,7 @@ import pytesseract
 from pytesseract import Output
 from PIL import ImageGrab
 import re
-
+pytesseract.pytesseract.tesseract_cmd = r'C:\Program Files\Tesseract-OCR\tesseract.exe'
 
 
 # win32gui.ShowWindow(window[0],5)

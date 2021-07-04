@@ -19,7 +19,7 @@ from src.tools.search import Search
 from src.errors.screen_errors import ScreenError
 from PIL import Image
 from PIL import ImageGrab
-
+pytesseract.pytesseract.tesseract_cmd = r'C:\Program Files\Tesseract-OCR\tesseract.exe'
 
 #proportioon Widht_screen/width_action_screen = 1.415
 #proportion width_sction_screen/high_action_scrren = 1.255
