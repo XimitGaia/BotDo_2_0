@@ -1,6 +1,7 @@
 import ctypes
 from pathlib import Path
 import sys
+
 path = Path(__file__).resolve()
 sys.path.append(str(path.parents[1]))
 from dofus_data_menager.map_coordinates import MapCoordinates
@@ -10,13 +11,14 @@ from database.unpackers.unpacker import Unpacker
 
 
 class CharacterDisplacementManager:
-
     def __init__(self, map_id):
-        self.map_positions_json = Unpacker.dofus_open('MapPositions.d2o')
-        self.map_coordinates_json = Unpacker.dofus_open('MapCoordinates.d2o')
+        self.map_positions_json = Unpacker.dofus_open("MapPositions.d2o")
+        self.map_coordinates_json = Unpacker.dofus_open("MapCoordinates.d2o")
         self.map_coordinates = MapCoordinates(self.map_coordinates_json)
         self.map_positions = MapPosition(self.map_positions_json, self.map_coordinates)
-        self.current_map_position = MapPosition(self.map_positions_json, self.map_coordinates)
+        self.current_map_position = MapPosition(
+            self.map_positions_json, self.map_coordinates
+        )
         self.current_map_position.get_map_position_by_id(map_id)
         self.xcoord = self.current_map_position.xcoord
         self.ycoord = self.current_map_position.ycoord
@@ -27,11 +29,16 @@ class CharacterDisplacementManager:
     def print_connectors_and_names(self):
         connectors = self.get_ordered_map_ids_from_coords(self.xcoord, self.ycoord)
         print(connectors)
-        i18n = Unpacker.dofus_open('i18n_en.d2i').get("texts")
+        i18n = Unpacker.dofus_open("i18n_en.d2i").get("texts")
         to_print = list()
         for connector in connectors:
             self.map_positions.get_map_position_by_id(connector)
-            to_print.append((i18n.get(self.map_positions.area_name_id), i18n.get(self.map_positions.sub_area_name_id)))
+            to_print.append(
+                (
+                    i18n.get(self.map_positions.area_name_id),
+                    i18n.get(self.map_positions.sub_area_name_id),
+                )
+            )
         print(to_print)
 
     def get_ordered_map_ids_from_coords(self, xcoord: int, ycoord: int):
@@ -62,12 +69,12 @@ class CharacterDisplacementManager:
             if self.map_positions.super_area_id == self.current_super_area:
                 world_type += 25
             world_type += 100
-            connectors_temp.append({'id': connector, 'order': world_type})
-        connectors_temp = sorted(connectors_temp, key=lambda k: k['order'])
+            connectors_temp.append({"id": connector, "order": world_type})
+        connectors_temp = sorted(connectors_temp, key=lambda k: k["order"])
         for connector in connectors_temp:
-            connectors_maps.append(connector.get('id'))
+            connectors_maps.append(connector.get("id"))
         return connectors_maps[::-1]
+
 
 c = CharacterDisplacementManager(88213774)
 c.print_connectors_and_names()
-

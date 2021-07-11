@@ -2,6 +2,7 @@
 import sys
 import os
 from pathlib import Path
+
 path = Path(__file__).resolve()
 sys.path.append(str(path.parents[1]))
 root_path = str(path.parents[1])
@@ -18,18 +19,19 @@ import pyautogui
 import win32gui
 import colorsys
 import threading
-pytesseract.pytesseract.tesseract_cmd = r'C:\Program Files\Tesseract-OCR\tesseract.exe'
+
+pytesseract.pytesseract.tesseract_cmd = r"C:\Program Files\Tesseract-OCR\tesseract.exe"
+
 
 class A:
-
     def __init__(self):
-        print('a')
+        print("a")
         self.lala = True
-        self.b = '1'
+        self.b = "1"
         thread = threading.Thread(target=self.kkkk, args=())
         thread.start()
         time.sleep(2)
-        self.b = '2'
+        self.b = "2"
         time.sleep(2)
         self.lala = False
 
@@ -38,5 +40,6 @@ class A:
             print(self.b)
             time.sleep(1)
 
-print('A')
+
+print("A")
 a = A()

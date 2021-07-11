@@ -2,7 +2,6 @@ import ctypes
 
 
 class WorldPoints:
-
     def __init__(self, map_id):
         self.map_id = map_id
         self.xcoord = None
@@ -18,5 +17,3 @@ class WorldPoints:
             self.xcoord = -(self.xcoord & 255)
         if ctypes.c_int(self.ycoord & 256).value == ctypes.c_int(256).value:
             self.ycoord = -(self.ycoord & 255)
-
-

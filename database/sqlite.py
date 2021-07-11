@@ -2,6 +2,8 @@
 import sys
 import os
 from pathlib import Path
+from threading import Lock
+
 path = Path(__file__).resolve()
 sys.path.append(str(path.parents[1]))
 root_path = str(path.parents[1])
@@ -12,12 +14,17 @@ import sqlite3
 
 class Database:
     def __init__(self):
-        self.connection = sqlite3.connect(f'{root_path}{os.sep}database{os.sep}dofus_sqlite.db')
+        self.connection = sqlite3.connect(
+            f"{root_path}{os.sep}database{os.sep}dofus_sqlite.db"
+        )
         self.check_or_create_tables()
         self.insert_values()
+        self.lock = Lock()
+
 
     def __del__(self):
         self.connection.close()
+
     #
     #       ::::::::  :::    ::: :::::::::: ::::::::  :::    :::            ::::::::  :::::::::             ::::::::  :::::::::  ::::::::::     ::: ::::::::::: ::::::::::
     #     :+:    :+: :+:    :+: :+:       :+:    :+: :+:   :+:            :+:    :+: :+:    :+:           :+:    :+: :+:    :+: :+:          :+: :+:   :+:     :+:
@@ -30,7 +37,9 @@ class Database:
 
     def check_if_tabel_exists(self, table_name: str):
         cursor = self.connection.cursor()
-        cursor.execute(f"""SELECT name FROM sqlite_master WHERE type='table' AND name='{table_name}';""")
+        cursor.execute(
+            f"""SELECT name FROM sqlite_master WHERE type='table' AND name='{table_name}';"""
+        )
         results = cursor.fetchall()
         cursor.close()
         for row in results:
@@ -41,19 +50,19 @@ class Database:
     def check_or_create_tables(self):
         cursor = self.connection.cursor()
         tables = {
-            'job_type':  {
-                'temp': False,
-                'sql':  """
+            "job_type": {
+                "temp": False,
+                "sql": """
                     CREATE TABLE *table*(
                         id integer PRIMARY KEY AUTOINCREMENT,
                         job_type TEXT UNIQUE
                     );
                 """,
-                'with_index': False
+                "with_index": False,
             },
-            'jobs':  {
-                'temp': False,
-                'sql':  """
+            "jobs": {
+                "temp": False,
+                "sql": """
                     CREATE TABLE *table*(
                         id integer PRIMARY KEY AUTOINCREMENT,
                         job_name TEXT UNIQUE,
@@ -61,11 +70,11 @@ class Database:
                         FOREIGN KEY(job_type) REFERENCES job_type(id)
                     );
                 """,
-                'with_index': False
+                "with_index": False,
             },
-            'harvestables_list':  {
-                'temp': False,
-                'sql':  """
+            "harvestables_list": {
+                "temp": False,
+                "sql": """
                     CREATE TABLE *table*(
                         id integer PRIMARY KEY AUTOINCREMENT,
                         resources_name TEXT UNIQUE,
@@ -74,11 +83,11 @@ class Database:
                         FOREIGN KEY(job_id) REFERENCES jobs(id)
                     );
                 """,
-                'with_index': False
+                "with_index": False,
             },
-            'monsters': {
-                'temp': False,
-                'sql': """
+            "monsters": {
+                "temp": False,
+                "sql": """
                     CREATE TABLE *table*(
                         id INTEGER PRIMARY KEY AUTOINCREMENT,
                         monster_id INTEGER,
@@ -102,11 +111,11 @@ class Database:
                         can_be_carried INTEGER
                     );
                 """,
-                'with_index': False
+                "with_index": False,
             },
-            'drops': {
-                'temp': False,
-                'sql': """
+            "drops": {
+                "temp": False,
+                "sql": """
                     CREATE TABLE *table*(
                         item_id integer PRIMARY KEY,
                         item_name TEXT,
@@ -116,11 +125,11 @@ class Database:
                         FOREIGN KEY(monster_id) REFERENCES monsters(id)
                     );
                 """,
-                'with_index': False
+                "with_index": False,
             },
-            'world_map': {
-                'temp': False,
-                'sql': """
+            "world_map": {
+                "temp": False,
+                "sql": """
                     CREATE TABLE *table*(
                         id integer PRIMARY KEY,
                         x INTEGER,
@@ -128,11 +137,11 @@ class Database:
                         outdoors INTEGER
                     );
                 """,
-                'with_index': False
+                "with_index": False,
             },
-            'interactives': {
-                'temp': False,
-                'sql': """
+            "interactives": {
+                "temp": False,
+                "sql": """
                     CREATE TABLE *table*(
                         id INTEGER PRIMARY KEY AUTOINCREMENT,
                         world_map_id INTEGER,
@@ -143,22 +152,22 @@ class Database:
                         FOREIGN KEY(world_map_id) REFERENCES world_map(id)
                     );
                 """,
-                'with_index': False
+                "with_index": False,
             },
-            'monsters_location': {
-                'temp': False,
-                'sql': """
+            "monsters_location": {
+                "temp": False,
+                "sql": """
                     CREATE TABLE *table*(
                         world_map_id INTEGER,
                         monster_id INTEGER REFERENCES monsters(monster_id),
                         FOREIGN KEY(world_map_id) REFERENCES world_map(id)
                     );
                 """,
-                'with_index': False
+                "with_index": False,
             },
-            'connections': {
-                'temp': False,
-                'sql': """
+            "connections": {
+                "temp": False,
+                "sql": """
                     CREATE TABLE *table*(
                         origin INTEGER,
                         destiny INTEGER,
@@ -170,11 +179,11 @@ class Database:
                         FOREIGN KEY(destiny) REFERENCES world_map(id)
                     );
                 """,
-                'with_index': False
+                "with_index": False,
             },
-            'zaaps': {
-                'temp': False,
-                'sql': """
+            "zaaps": {
+                "temp": False,
+                "sql": """
                     CREATE TABLE *table*(
                         name TEXT UNIQUE,
                         world_map_id INTEGER,
@@ -183,11 +192,11 @@ class Database:
                         FOREIGN KEY(world_map_id) REFERENCES world_map(id)
                     );
                 """,
-                'with_index': False
+                "with_index": False,
             },
-            'harvestables_cells': {
-                'temp': False,
-                'sql': """
+            "harvestables_cells": {
+                "temp": False,
+                "sql": """
                     CREATE TABLE *table*(
                         world_map_id INTEGER,
                         harvestable_id INTEGER,
@@ -198,19 +207,19 @@ class Database:
                         FOREIGN KEY(harvestable_id) REFERENCES harvestables_list(id)
                     );
                 """,
-                'with_index': False
+                "with_index": False,
             },
         }
         for table in tables:
             tables_to_create = [table]
-            if tables[table]['temp']:
+            if tables[table]["temp"]:
                 tables_to_create.append(f"{table}_temp")
-            sql = tables[table]['sql']
+            sql = tables[table]["sql"]
             for table_to_create in tables_to_create:
                 if not self.check_if_tabel_exists(table_to_create):
-                    create_table = sql.replace('*table*', table_to_create)
+                    create_table = sql.replace("*table*", table_to_create)
                     cursor.execute(create_table)
-                    if tables[table]['with_index']:
+                    if tables[table]["with_index"]:
                         index = f"""
                             CREATE UNIQUE INDEX IF NOT EXISTS {table_to_create}_id_index
                             ON {table_to_create}(ID);
@@ -234,53 +243,82 @@ class Database:
 
     def insert_jobs(self, row: tuple):
         cursor = self.connection.cursor()
-        cursor.execute("""INSERT OR IGNORE INTO jobs(job_name, job_type) VALUES (?, ?);""", row)
+        cursor.execute(
+            """INSERT OR IGNORE INTO jobs(job_name, job_type) VALUES (?, ?);""", row
+        )
         self.connection.commit()
 
     def insert_harvestables_list(self, row: tuple):
         cursor = self.connection.cursor()
-        cursor.execute("""INSERT OR IGNORE INTO harvestables_list(resources_name, resources_level, job_id) VALUES (?, ?, ?);""", row)
+        cursor.execute(
+            """INSERT OR IGNORE INTO harvestables_list(resources_name, resources_level, job_id) VALUES (?, ?, ?);""",
+            row,
+        )
         self.connection.commit()
 
     def insert_monsters(self, row: tuple):
         cursor = self.connection.cursor()
-        cursor.execute("""INSERT OR IGNORE INTO monsters(monster_id, monster_name, monster_type, level, life_points, action_points, movement_points, pa_dodge, pm_dodge, earth_resistance, air_resistance, fire_resistance , water_resistance, neutral_resistance, can_trackle, can_be_pushed, can_switch_pos, can_switch_pos_on_target, can_be_carried) values(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?);""", row)
+        cursor.execute(
+            """INSERT OR IGNORE INTO monsters(monster_id, monster_name, monster_type, level, life_points, action_points, movement_points, pa_dodge, pm_dodge, earth_resistance, air_resistance, fire_resistance , water_resistance, neutral_resistance, can_trackle, can_be_pushed, can_switch_pos, can_switch_pos_on_target, can_be_carried) values(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?);""",
+            row,
+        )
         self.connection.commit()
 
     def insert_world_map(self, row: tuple):
         cursor = self.connection.cursor()
-        cursor.execute("""INSERT OR IGNORE INTO world_map(id, x, y, outdoors) values(?,?,?,?);""", row)
+        cursor.execute(
+            """INSERT OR IGNORE INTO world_map(id, x, y, outdoors) values(?,?,?,?);""",
+            row,
+        )
         self.connection.commit()
         return cursor.lastrowid
 
     def insert_zaaps(self, row: tuple):
         cursor = self.connection.cursor()
-        cursor.execute("""INSERT OR IGNORE INTO zaaps(name, world_map_id, x, y) values(?,?,?,?);""", row)
+        cursor.execute(
+            """INSERT OR IGNORE INTO zaaps(name, world_map_id, x, y) values(?,?,?,?);""",
+            row,
+        )
         self.connection.commit()
 
     def insert_harvestables_cells(self, row: tuple):
         cursor = self.connection.cursor()
-        cursor.execute("""INSERT OR IGNORE INTO harvestables_cells(world_map_id, harvestable_id, cell, offset_x, offset_y) values(?,?,?,?,?);""", row)
+        cursor.execute(
+            """INSERT OR IGNORE INTO harvestables_cells(world_map_id, harvestable_id, cell, offset_x, offset_y) values(?,?,?,?,?);""",
+            row,
+        )
         self.connection.commit()
 
     def insert_drops(self, row: tuple):
         cursor = self.connection.cursor()
-        cursor.execute("""INSERT OR IGNORE INTO drops(item_id, item_name, item_level, monster_id, drop_rate) values(?,?,?,?,?);""", row)
+        cursor.execute(
+            """INSERT OR IGNORE INTO drops(item_id, item_name, item_level, monster_id, drop_rate) values(?,?,?,?,?);""",
+            row,
+        )
         self.connection.commit()
 
     def insert_interactives(self, row: tuple):
         cursor = self.connection.cursor()
-        cursor.execute("""INSERT OR IGNORE INTO interactives(world_map_id, type, cell, offset_x, offset_y) values(?,?,?,?,?);""", row)
+        cursor.execute(
+            """INSERT OR IGNORE INTO interactives(world_map_id, type, cell, offset_x, offset_y) values(?,?,?,?,?);""",
+            row,
+        )
         self.connection.commit()
 
     def insert_monster_location(self, row: tuple):
         cursor = self.connection.cursor()
-        cursor.execute("""INSERT OR IGNORE INTO monsters_location(world_map_id, monster_id) values(?,?);""", row)
+        cursor.execute(
+            """INSERT OR IGNORE INTO monsters_location(world_map_id, monster_id) values(?,?);""",
+            row,
+        )
         self.connection.commit()
 
     def insert_connector(self, row: tuple):
         cursor = self.connection.cursor()
-        cursor.execute("""INSERT OR IGNORE INTO connections(origin, destiny, type, cell, offset_x, offset_y) values(?,?,?,?,?,?);""", row)
+        cursor.execute(
+            """INSERT OR IGNORE INTO connections(origin, destiny, type, cell, offset_x, offset_y) values(?,?,?,?,?,?);""",
+            row,
+        )
         self.connection.commit()
 
     # :::    ::: :::::::::  :::::::::      ::: ::::::::::: ::::::::::
@@ -293,7 +331,9 @@ class Database:
 
     def update_world_map(self, row: tuple, column_name: str):
         cursor = self.connection.cursor()
-        cursor.execute(f"""UPDATE  world_map set {column_name} = ? where id = ?;""", row)
+        cursor.execute(
+            f"""UPDATE  world_map set {column_name} = ? where id = ?;""", row
+        )
         self.connection.commit()
 
     #   :+:     :+:   :+: :+:   :+:       :+:    :+: :+:       :+:    :+:
@@ -313,113 +353,116 @@ class Database:
             callback(values)
 
     def insert_values_job_type_2020_11_02(self):
-        values_list =[
-            ('drop_collecting',),
-            ('collecting',),
+        values_list = [
+            ("drop_collecting",),
+            ("collecting",),
         ]
-        self.insert_values_executor(callback=self.insert_job_type, values_list=values_list)
+        self.insert_values_executor(
+            callback=self.insert_job_type, values_list=values_list
+        )
 
     def insert_values_jobs_2020_11_02(self):
-        values_list =[
-            ('lumberjack', 2),
-            ('farmer', 2),
-            ('alchemist', 2),
-            ('miner', 2),
-            ('fishman', 2),
-            ('Artificer', 1),
-            ('Carver', 1),
-            ('Handyman', 1),
-            ('Jeweller', 1),
-            ('Shoemaker ', 1),
-            ('Smith', 1),
-            ('Tailor', 1),
-
+        values_list = [
+            ("lumberjack", 2),
+            ("farmer", 2),
+            ("alchemist", 2),
+            ("miner", 2),
+            ("fishman", 2),
+            ("Artificer", 1),
+            ("Carver", 1),
+            ("Handyman", 1),
+            ("Jeweller", 1),
+            ("Shoemaker ", 1),
+            ("Smith", 1),
+            ("Tailor", 1),
         ]
         self.insert_values_executor(callback=self.insert_jobs, values_list=values_list)
 
     def insert_value_harvestables_2021_05_02(self):
-        values_list =[
-            ('Ash', 1, 1),
-            ('Chestnut', 20, 1),
-            ('Walnut', 40, 1),
-            ('Oak', 60, 1),
-            ('Bombu', 70, 1),
-            ('Maple', 80, 1),
-            ('Oliviolet', 90, 1),
-            ('Yew', 100, 1),
-            ('Bamboo', 110, 1),
-            ('Cherry', 120, 1),
-            ('Hazel', 130, 1),
-            ('Ebony', 140, 1),
-            ('Kaliptus', 150, 1),
-            ('Hornbeam', 160, 1),
-            ('Dark Bamboo', 170, 1),
-            ('Elm', 180, 1),
-            ('Holy Bamboo', 190, 1),
-            ('Aspen', 200, 1),
-            ('Mahaquany', 200, 1),
-            ('Wheat', 1, 2),
-            ('Barley', 20, 2),
-            ('Oats', 40, 2),
-            ('Hop Hop', 60, 2),
-            ('Flax', 80, 2),
-            ('Rice', 100, 2),
-            ('Rye Rye', 100, 2),
-            ('Malt', 120, 2),
-            ('Hemp', 140, 2),
-            ('Corn', 160, 2),
-            ('Millet', 180, 2),
-            ('Frosteez', 200, 2),
-            ('Quisnoa', 200, 2),
-            ('Nettles', 1, 3),
-            ('Sage', 20, 3),
-            ('Five-Leaf Clover', 40, 3),
-            ('Wild Mint', 60, 3),
-            ('Freyesque Orchid', 80, 3),
-            ('Edelweiss', 100, 3),
-            ('Pandkin Seed', 120, 3),
-            ('Ginseng', 140, 3),
-            ('Belladonna', 160, 3),
-            ('Mandrake', 180, 3),
-            ('Salikronia', 200, 3),
-            ('Snowdrop', 200, 3),
-            ('Iron', 10, 4),
-            ('Copper', 20, 4),
-            ('Bronze', 40, 4),
-            ('Cobalt', 60, 4),
-            ('Manganese', 80, 4),
-            ('Tin', 100, 4),
-            ('Silicate', 100, 4),
-            ('Silver', 120, 4),
-            ('Bauxite', 140, 4),
-            ('Gold', 160, 4),
-            ('Dolomite', 180, 4),
-            ('Obsidian', 200, 4),
-            ('Sepiolite', 200, 4),
-            ('Gudgeon', 1, 5),
-            ('Grawn', 10, 5),
-            ('Trout', 20, 5),
-            ('Crab Surimi', 30, 5),
-            ('Kittenfish', 40, 5),
-            ('Breaded Fish', 50, 5),
-            ('Ediem Carp', 60, 5),
-            ('Shiny Sardine', 70, 5),
-            ('Pike', 80, 5),
-            ('Kralove', 90, 5),
-            ('Eel', 100, 5),
-            ('Grey Sea Bream', 110, 5),
-            ('Perch', 120, 5),
-            ('Blue Ray', 130, 5),
-            ('Monkfish', 140, 5),
-            ('Sickle-Hammerhead Shark', 150, 5),
-            ('Lard Bass', 160, 5),
-            ('Cod', 170, 5),
-            ('Tench', 180, 5),
-            ('Swordfish', 190, 5),
-            ('Icefish', 200, 5),
-            ('Limpet', 200, 5)
+        values_list = [
+            ("Ash", 1, 1),
+            ("Chestnut", 20, 1),
+            ("Walnut", 40, 1),
+            ("Oak", 60, 1),
+            ("Bombu", 70, 1),
+            ("Maple", 80, 1),
+            ("Oliviolet", 90, 1),
+            ("Yew", 100, 1),
+            ("Bamboo", 110, 1),
+            ("Cherry", 120, 1),
+            ("Hazel", 130, 1),
+            ("Ebony", 140, 1),
+            ("Kaliptus", 150, 1),
+            ("Hornbeam", 160, 1),
+            ("Dark Bamboo", 170, 1),
+            ("Elm", 180, 1),
+            ("Holy Bamboo", 190, 1),
+            ("Aspen", 200, 1),
+            ("Mahaquany", 200, 1),
+            ("Wheat", 1, 2),
+            ("Barley", 20, 2),
+            ("Oats", 40, 2),
+            ("Hop Hop", 60, 2),
+            ("Flax", 80, 2),
+            ("Rice", 100, 2),
+            ("Rye Rye", 100, 2),
+            ("Malt", 120, 2),
+            ("Hemp", 140, 2),
+            ("Corn", 160, 2),
+            ("Millet", 180, 2),
+            ("Frosteez", 200, 2),
+            ("Quisnoa", 200, 2),
+            ("Nettles", 1, 3),
+            ("Sage", 20, 3),
+            ("Five-Leaf Clover", 40, 3),
+            ("Wild Mint", 60, 3),
+            ("Freyesque Orchid", 80, 3),
+            ("Edelweiss", 100, 3),
+            ("Pandkin Seed", 120, 3),
+            ("Ginseng", 140, 3),
+            ("Belladonna", 160, 3),
+            ("Mandrake", 180, 3),
+            ("Salikronia", 200, 3),
+            ("Snowdrop", 200, 3),
+            ("Iron", 10, 4),
+            ("Copper", 20, 4),
+            ("Bronze", 40, 4),
+            ("Cobalt", 60, 4),
+            ("Manganese", 80, 4),
+            ("Tin", 100, 4),
+            ("Silicate", 100, 4),
+            ("Silver", 120, 4),
+            ("Bauxite", 140, 4),
+            ("Gold", 160, 4),
+            ("Dolomite", 180, 4),
+            ("Obsidian", 200, 4),
+            ("Sepiolite", 200, 4),
+            ("Gudgeon", 1, 5),
+            ("Grawn", 10, 5),
+            ("Trout", 20, 5),
+            ("Crab Surimi", 30, 5),
+            ("Kittenfish", 40, 5),
+            ("Breaded Fish", 50, 5),
+            ("Ediem Carp", 60, 5),
+            ("Shiny Sardine", 70, 5),
+            ("Pike", 80, 5),
+            ("Kralove", 90, 5),
+            ("Eel", 100, 5),
+            ("Grey Sea Bream", 110, 5),
+            ("Perch", 120, 5),
+            ("Blue Ray", 130, 5),
+            ("Monkfish", 140, 5),
+            ("Sickle-Hammerhead Shark", 150, 5),
+            ("Lard Bass", 160, 5),
+            ("Cod", 170, 5),
+            ("Tench", 180, 5),
+            ("Swordfish", 190, 5),
+            ("Icefish", 200, 5),
+            ("Limpet", 200, 5),
         ]
-        self.insert_values_executor(callback=self.insert_harvestables_list, values_list=values_list)
+        self.insert_values_executor(
+            callback=self.insert_harvestables_list, values_list=values_list
+        )
 
     def insert_values_zaaps_2021_05_05(self):
         values_list = [
@@ -462,17 +505,17 @@ class Database:
             ("Abandoned Labowatowies", 115737095, 27, -14),
             ("Cawwot Island", 99615238, 25, -4),
             ("Zoth Village", 28050436, -53, 18),
-            ("Way of Souls", 154010371, -1, -3)
+            ("Way of Souls", 154010371, -1, -3),
         ]
         self.insert_values_executor(callback=self.insert_zaaps, values_list=values_list)
 
-#        ::::::::   :::    ::: :::::::::: :::    ::: :::::::::: ::::::::
-#      :+:    :+:  :+:    :+: :+:        :+:    :+: :+:       :+:    :+:
-#     +:+    +:+  +:+    +:+ +:+        +:+    +:+ +:+       +:+
-#    +#+    +:+  +#+    +:+ +#++:++#   +#+    +:+ +#++:++#  +#++:++#++
-#   +#+    +#+  +#+    +#+ +#+        +#+    +#+ +#+              +#+
-#  #+#    #+#  #+#    #+# #+#        #+#    #+# #+#       #+#    #+#
-#  ########### ########  ##########  ########  ########## ########
+    #        ::::::::   :::    ::: :::::::::: :::    ::: :::::::::: ::::::::
+    #      :+:    :+:  :+:    :+: :+:        :+:    :+: :+:       :+:    :+:
+    #     +:+    +:+  +:+    +:+ +:+        +:+    +:+ +:+       +:+
+    #    +#+    +:+  +#+    +:+ +#++:++#   +#+    +:+ +#++:++#  +#++:++#++
+    #   +#+    +#+  +#+    +#+ +#+        +#+    +#+ +#+              +#+
+    #  #+#    #+#  #+#    #+# #+#        #+#    #+# #+#       #+#    #+#
+    #  ########### ########  ##########  ########  ########## ########
 
     def query(self, sql: str):
         """
@@ -480,9 +523,11 @@ class Database:
         :param conn: the Connection object
         :return:
         """
+        self.lock.acquire(blocking=True, timeout=-1)
         cursor = self.connection.cursor()
         cursor.execute(sql)
         rows = cursor.fetchall()
+        self.lock.release()
         return rows
 
     def get_world_map_with_harvestable_indication(self, harvestables_list: list):
@@ -564,13 +609,13 @@ class Database:
     #     """
     #     return self.query(sql)
 
-# :::     ::: ::::::::::: :::::::::: :::       :::
-# :+:     :+:     :+:     :+:        :+:       :+:
-# +:+     +:+     +:+     +:+        +:+       +:+
-# +#+     +:+     +#+     +#++:++#   +#+  +:+  +#+
-#  +#+   +#+      +#+     +#+        +#+ +#+#+ +#+
-#   #+#+#+#       #+#     #+#         #+#+# #+#+#
-#     ###     ########### ##########   ###   ###
+    # :::     ::: ::::::::::: :::::::::: :::       :::
+    # :+:     :+:     :+:     :+:        :+:       :+:
+    # +:+     +:+     +:+     +:+        +:+       +:+
+    # +#+     +:+     +#+     +#++:++#   +#+  +:+  +#+
+    #  +#+   +#+      +#+     +#+        +#+ +#+#+ +#+
+    #   #+#+#+#       #+#     #+#         #+#+# #+#+#
+    #     ###     ########### ##########   ###   ###
 
     def create_harvestables_location_view(self):
         cursor = self.connection.cursor()
@@ -585,5 +630,5 @@ class Database:
         self.connection.commit()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     database = Database()

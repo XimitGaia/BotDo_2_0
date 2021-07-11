@@ -2,7 +2,6 @@ import ctypes
 
 
 class MapCoordinates:
-
     def __init__(self, json):
         self.data = self.load_json(json)
 
@@ -21,8 +20,10 @@ class MapCoordinates:
         xcompressed = self.get_compressed_value(xcoord)
         ycompressed = self.get_compressed_value(ycoord)
         compressed_coord = ctypes.c_int((xcompressed << 16) + ycompressed).value
-        print('compressed:', compressed_coord)
-        return self.get_map_coordinates_by_compressed_coord(compressed_coord=compressed_coord)
+        print("compressed:", compressed_coord)
+        return self.get_map_coordinates_by_compressed_coord(
+            compressed_coord=compressed_coord
+        )
 
     def get_compressed_value(self, coord: int):
         if coord < 0:

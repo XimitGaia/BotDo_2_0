@@ -67,7 +67,7 @@ class Map:
         self._obj["header"] = self.raw().read_char()
         self._obj["mapVersion"] = self.raw().read_char()
         self._obj["mapId"] = self.raw().read_uint32()
-        #print(self._obj["mapId"])
+        # print(self._obj["mapId"])
 
         if self._obj["mapVersion"] >= 7:
             self._obj["encrypted"] = self.raw().read_bool()
@@ -78,7 +78,9 @@ class Map:
                 self.encryptedData = self.raw().read_bytes(self.dataLen)
                 decryptedData = bytearray()
                 for i in range(0, self.dataLen):
-                    decryptedData.append(self.encryptedData[i] ^ ord(self._key[i % len(self._key)]))
+                    decryptedData.append(
+                        self.encryptedData[i] ^ ord(self._key[i % len(self._key)])
+                    )
 
                 cleanData = io.BytesIO(decryptedData)
                 self._raw = _BinaryStream(cleanData, True)
@@ -103,13 +105,22 @@ class Map:
             grid_red = (read_color & 16711680) >> 16
             grid_green = (read_color & 65280) >> 8
             grid_blue = read_color & 255
-            self._obj["gridColor"] = (grid_alpha & 255) << 32 | (grid_red & 255) << 16 | (grid_green & 255) << 8 | grid_blue & 255
+            self._obj["gridColor"] = (
+                (grid_alpha & 255) << 32
+                | (grid_red & 255) << 16
+                | (grid_green & 255) << 8
+                | grid_blue & 255
+            )
         elif self._obj["mapVersion"] >= 3:
             self._obj["backgroundRed"] = self.raw().read_char()
             self._obj["backgroundGreen"] = self.raw().read_char()
             self._obj["backgroundBlue"] = self.raw().read_char()
 
-        self._obj["backgroundColor"] = (self._obj["backgroundRed"] & 255) << 16 | (self._obj["backgroundGreen"] & 255) << 8 | self._obj["backgroundBlue"] & 255
+        self._obj["backgroundColor"] = (
+            (self._obj["backgroundRed"] & 255) << 16
+            | (self._obj["backgroundGreen"] & 255) << 8
+            | self._obj["backgroundBlue"] & 255
+        )
 
         if self._obj["mapVersion"] >= 4:
             self._obj["zoomScale"] = self.raw().read_uint16() / 100
@@ -148,17 +159,17 @@ class Map:
         self.raw().read_int32()
         self._obj["groundCRC"] = self.raw().read_int32()
         self._obj["layersCount"] = self.raw().read_char()
-        #print(self._obj["layersCount"])
+        # print(self._obj["layersCount"])
 
         self._obj["layers"] = []
         for i in range(0, self._obj["layersCount"]):
-            #print('FOr each layer')
+            # print('FOr each layer')
             la = Layer(self, self._obj["mapVersion"])
             la.read()
             self._obj["layers"].append(la.getObj())
-        #print(self._obj["layers"])
+        # print(self._obj["layers"])
 
-        self._obj["cellsCount"] = 560 # MAP_CELLS_COUNT
+        self._obj["cellsCount"] = 560  # MAP_CELLS_COUNT
         self._obj["cells"] = []
         for i in range(0, self._obj["cellsCount"]):
             cd = CellData(self, i, self._obj["mapVersion"])
@@ -167,7 +178,7 @@ class Map:
 
     def write(self):
         output_stream = self._raw
-        cleanData = io.BytesIO() #tempfile.TemporaryFile()
+        cleanData = io.BytesIO()  # tempfile.TemporaryFile()
         self._raw = _BinaryStream(cleanData, True)
 
         self.raw().write_uint32(self._obj["relativeId"])
@@ -180,10 +191,12 @@ class Map:
         self.raw().write_int32(self._obj["shadowBonusOnEntities"])
 
         if self._obj["mapVersion"] >= 9:
-            write_color = ((self._obj["backgroundAlpha"] << 32) & 4278190080 |
-                           (self._obj["backgroundRed"] << 16) & 16711680 |
-                           (self._obj["backgroundGreen"] << 8) & 65280 |
-                           self._obj["backgroundBlue"] & 255)
+            write_color = (
+                (self._obj["backgroundAlpha"] << 32) & 4278190080
+                | (self._obj["backgroundRed"] << 16) & 16711680
+                | (self._obj["backgroundGreen"] << 8) & 65280
+                | self._obj["backgroundBlue"] & 255
+            )
             self.raw().write_int32(write_color)
             write_color = self._obj["gridColor"]
             self.raw().write_uint32(write_color)
@@ -235,10 +248,14 @@ class Map:
         if self._obj["mapVersion"] >= 7:
             self.raw().write_bool(self._obj["encrypted"])
             self.raw().write_char(self._obj["encryptionVersion"])
-            self.raw().write_int32(len(cleanData.getbuffer())) # TODO: check len with getBuffer
+            self.raw().write_int32(
+                len(cleanData.getbuffer())
+            )  # TODO: check len with getBuffer
             encryptedData = input_stram.read_bytes()
             for i in range(0, len(cleanData.getbuffer())):
-                self.raw().write_uchar(encryptedData[i] ^ ord(self._key[i % len(self._key)][0]))
+                self.raw().write_uchar(
+                    encryptedData[i] ^ ord(self._key[i % len(self._key)][0])
+                )
         else:
             self.raw().write_bytes(input_stram.read_bytes())
 
@@ -287,7 +304,11 @@ class Fixture:
         self._obj["redMultiplier"] = self.raw().read_char()
         self._obj["greenMultiplier"] = self.raw().read_char()
         self._obj["blueMultiplier"] = self.raw().read_char()
-        self._obj["hue"] = self._obj["redMultiplier"] | self._obj["greenMultiplier"] | self._obj["blueMultiplier"]
+        self._obj["hue"] = (
+            self._obj["redMultiplier"]
+            | self._obj["greenMultiplier"]
+            | self._obj["blueMultiplier"]
+        )
         self._obj["alpha"] = self.raw().read_uchar()
 
     def write(self):
@@ -365,7 +386,9 @@ class Cell:
         self._obj["elementsCount"] = self.raw().read_int16()
         self._obj["elements"] = []
         for i in range(0, self._obj["elementsCount"]):
-            el = BasicElement().GetElementFromType(self, self.raw().read_char(), self.mapVersion)
+            el = BasicElement().GetElementFromType(
+                self, self.raw().read_char(), self.mapVersion
+            )
             el.read()
             self._obj["elements"].append(el.getObj())
 
@@ -453,14 +476,16 @@ class CellData:
             self._obj["blue"] = (self._obj["losmov"] & 16) >> 4 == 1
             self._obj["red"] = (self._obj["losmov"] & 8) >> 3 == 1
             self._obj["nonWalkableDuringRP"] = (self._obj["losmov"] & 128) >> 7 == 1
-            self._obj["nonWalkableDuringFight"] = (self._obj["losmov"] & 4)
+            self._obj["nonWalkableDuringFight"] = self._obj["losmov"] & 4
         self._obj["speed"] = self.raw().read_char()
         self._obj["mapChangeData"] = self.raw().read_char()
 
         if self.mapVersion > 5:
             self._obj["moveZone"] = self.raw().read_uchar()
 
-        if self.mapVersion > 10 and (self.hasLinkedZoneRP() or self.hasLinkedZoneFight()):
+        if self.mapVersion > 10 and (
+            self.hasLinkedZoneRP() or self.hasLinkedZoneFight()
+        ):
             self._obj["_linkedZone"] = self.raw().read_uchar()
 
         if self.mapVersion > 7 and self.mapVersion < 9:
@@ -540,17 +565,19 @@ class CellData:
         return self._obj["mov"] and not self._obj["farmCell"]
 
     def hasLinkedZoneFight(self):
-        return self._obj["mov"] \
-               and not self._obj["nonWalkableDuringFight"]\
-               and not self._obj["farmCell"]\
-               and not self._obj["havenbagCell"]
+        return (
+            self._obj["mov"]
+            and not self._obj["nonWalkableDuringFight"]
+            and not self._obj["farmCell"]
+            and not self._obj["havenbagCell"]
+        )
 
 
 class BasicElement:
     def GetElementFromType(self, parrent, type, mapVersion):
-        if type == 2: # GRAPHICAL
+        if type == 2:  # GRAPHICAL
             return GraphicalElement(parrent, mapVersion)
-        elif type == 33: # SOUND
+        elif type == 33:  # SOUND
             return SoundElement(parrent, mapVersion)
         else:
             raise InvalidDLMFile("Invalid element type.")

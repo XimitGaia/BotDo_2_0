@@ -2,6 +2,7 @@
 import sys
 import os
 from pathlib import Path
+
 path = Path(__file__).resolve()
 sys.path.append(str(path.parents[1]))
 root_path = str(path.parents[1])
@@ -26,15 +27,9 @@ from src.errors.character_errors import CharacterCriticalError, RetryError, JobE
 
 debug = True
 
-class Character:
 
-    def __init__(
-        self,
-        state: State,
-        screen: Screen,
-        account: dict,
-        database: Database
-    ):
+class Character:
+    def __init__(self, state: State, screen: Screen, account: dict, database: Database):
         self.shared_state = state
         self.screen = screen
         self.database = database
@@ -46,8 +41,16 @@ class Character:
         self.level = None
         self.class_name = None
         self.current_hp = None
-        self.location_controler = {'current_map': None, 'outdoors': None, 'next_map': None}
-        self.time_controler = {'started_at': 0, 'seconds_to_wait': 0, 'locked_timer': False}
+        self.location_controler = {
+            "current_map": None,
+            "outdoors": None,
+            "next_map": None,
+        }
+        self.time_controler = {
+            "started_at": 0,
+            "seconds_to_wait": 0,
+            "locked_timer": False,
+        }
         self.my_zaaps = dict()
         self.primary_status = dict()
         self.res_status = dict()
@@ -61,71 +64,72 @@ class Character:
         self.chat = Chat(screen=self.screen, character_name=self.name)
         self.chat_comands_map = Character.get_chat_comands_map()
         self.add_init_functions_on_queue()
-        self.start_position_watcher()
+        #self.start_position_watcher()
 
     def run_function(self):
         if len(self.queue) > 0:
             self.wait()
             job = self.queue.pop(0)
-            if job.__name__ != 'login_dofus':
+            if job.__name__ != "login_dofus":
                 Screen.bring_character_to_front(self.window_id)
             if job:
                 try:
                     Character.run_function_with_retry(job)
                 except JobError as e:
-                    raise JobError(f'Max atemp of 3 for {self.name} job = {job.__name__}')
-        if job.__name__ != 'collect':
-            self.shared_state.set_state(key='turn_of', value='free')
+                    raise JobError(
+                        f"Max atemp of 3 for {self.name} job = {job.__name__}"
+                    )
+        if job.__name__ != "collect":
+            self.shared_state.set_state(key="turn_of", value="free")
 
     def wait(self):
-        if not self.time_controler['locked_timer']:
-            elapsed_time = time.time() - self.time_controler.get('started_at')
-            while elapsed_time < self.time_controler.get('seconds_to_wait'):
-                if self.location_controler['map_id'] == self.location_controler['next_map_id']:
+        if not self.time_controler["locked_timer"]:
+            elapsed_time = time.time() - self.time_controler.get("started_at")
+            while elapsed_time < self.time_controler.get("seconds_to_wait"):
+                if (
+                    self.location_controler["map_id"]
+                    == self.location_controler["next_map_id"]
+                ):
                     time.sleep(0.5)
                     break
                 time.sleep(0.05)
-                elapsed_time = time.time() - self.time_controler.get('started_at')
-            self.time_controler.update({'started_at': 0, 'seconds_to_wait': 0})
+                elapsed_time = time.time() - self.time_controler.get("started_at")
+            self.time_controler.update({"started_at": 0, "seconds_to_wait": 0})
 
     @staticmethod
     def get_chat_comands_map():
         return {
-            'hp': {
-                'string': '/g %hp%',
-                'regex': re.compile(r'(\d+)'),
-                'type': 'int'
+            "hp": {"string": "/g %hp%", "regex": re.compile(r"(\d+)"), "type": "int"},
+            "pos": {
+                "string": "/g %pos%",
+                "regex": re.compile(r"(-?\d{1,2})"),
+                "type": "tuple",
             },
-            'pos': {
-                'string': '/g %pos%',
-                'regex': re.compile(r'(-?\d{1,2})'),
-                'type': 'tuple'
+            "map_id": {
+                "string": "/mapid",
+                "regex": re.compile(r"map:? ?(\d+)"),
+                "type": "int",
             },
-            'map_id': {
-                'string': '/mapid',
-                'regex': re.compile(r'map:? ?(\d+)'),
-                'type': 'int'
-            }
         }
 
     @staticmethod
     def run_function_with_retry(job: callable, retry_counter: int = 0):
         retry_counter += 1
         if retry_counter > 3:
-            raise JobError('Max atemp of 3')
+            raise JobError("Max atemp of 3")
         try:
             wait_time = job()
             return wait_time
         except RetryError as e:
-            print(f'[JOB] {job.__name__} fail {retry_counter}/3', e)
+            print(f"[JOB] {job.__name__} fail {retry_counter}/3", e)
             Character.run_function_with_retry(job, retry_counter)
 
     def queue_len(self):
         return len(self.queue)
 
     def go_to(self, map_id: int):
-        print(f'Moving to {str(map_id)}')
-        start_position = self.location_controler['current_map']
+        print(f"Moving to {str(map_id)}")
+        start_position = self.location_controler["current_map"]
         self.moving.register_path_to_move(start=start_position, destiny=map_id)
         self.queue.append(self.move)
         self.run_function()
@@ -142,19 +146,19 @@ class Character:
             self.queue.append(self.get_zaaps)
 
     def get_check_string(self, property_name: str):
-        return self.chat_comands_map.get(property_name).get('string')
+        return self.chat_comands_map.get(property_name).get("string")
 
     def get_check_regex(self, property_name: str):
-        return self.chat_comands_map.get(property_name).get('regex')
+        return self.chat_comands_map.get(property_name).get("regex")
 
     def get_check_type(self, property_name: str):
-        return self.chat_comands_map.get(property_name).get('type')
+        return self.chat_comands_map.get(property_name).get("type")
 
     def cast_str_by_type(self, string: str, type: str):
-        if type == 'int':
+        if type == "int":
             return int(string)
-        if type == 'tuple':
-            return eval(f'({string})')
+        if type == "tuple":
+            return eval(f"({string})")
         return None
 
     def check_list(self, str_list: list):
@@ -169,7 +173,9 @@ class Character:
             cast_type = self.get_check_type(str_item)
             try:
                 regex_return = regex.findall(results[count])
-                to_return[str_item] = self.cast_str_by_type(','.join(regex_return), cast_type)
+                to_return[str_item] = self.cast_str_by_type(
+                    ",".join(regex_return), cast_type
+                )
                 count += 1
             except:
                 self.chat.refresh_frase()
@@ -179,38 +185,62 @@ class Character:
         return to_return
 
     def is_location_ocr_avaliable(self):
-        return self.shared_state.get('threads_status').get(self.watch_position_thread_name) == 'running'
+        return (
+            self.shared_state.get("threads_status").get(self.watch_position_thread_name)
+            == "running"
+        )
 
     def is_indoor_diplacement(self):
-        is_next_map_outdoor = self.database.get_map_info(self.location_controler['next_map'])[0][3]
-        return not (self.location_controler['outdoor'] and is_next_map_outdoor)
+        is_next_map_outdoor = self.database.get_map_info(
+            self.location_controler["next_map"]
+        )[0][3]
+        return not (self.location_controler["outdoor"] and is_next_map_outdoor)
 
     def wait_outdoor_connections(self):
-        watch_position_status = self.shared_state.get('threads_status').get(self.watch_position_thread_name)
+        watch_position_status = self.shared_state.get("threads_status").get(
+            self.watch_position_thread_name
+        )
         while self.is_indoor_diplacement():
-            if watch_position_status != 'indoor_waiting':
-                self.shared_state.set_thread_status(self.watch_position_thread_name, 'indoor_waiting')
+            if watch_position_status != "indoor_waiting":
+                self.shared_state.set_thread_status(
+                    self.watch_position_thread_name, "indoor_waiting"
+                )
             time.sleep(0.5)
-        if watch_position_status != 'running':
-            self.shared_state.set_thread_status(self.watch_position_thread_name, 'running')
+        if watch_position_status != "running":
+            self.shared_state.set_thread_status(
+                self.watch_position_thread_name, "running"
+            )
 
     def watch_position(self):
-        self.watch_position_thread_name = f'{self.name}_watch_position_thread'
-        self.shared_state.set_thread_status(self.watch_position_thread_name, 'running')
+        self.watch_position_thread_name = f"{self.name}_watch_position_thread"
+        self.shared_state.set_thread_status(self.watch_position_thread_name, "running")
         errors = 0
         while True:
-            self.shared_state.check_pause_command(thread_name=self.watch_position_thread_name)
+            self.shared_state.check_pause_command(
+                thread_name=self.watch_position_thread_name
+            )
             self.wait_outdoor_connections()
             if self.window_id == self.screen.get_foreground_screen_id():
                 pos = self.screen.get_pos_ocr()
-                next_map_pos = self.database.get_map_info(world_map_id=self.location_controler['next_map'])[0][1:3]
+                next_map_pos = self.database.get_map_info(
+                    world_map_id=self.location_controler["next_map"]
+                )[0][1:3]
                 if len(pos) < 2:
                     errors += 1
                     if errors > 5:
-                        if self.shared_state.get('threads_status').get(self.watch_position_thread_name) != 'error':
-                            self.shared_state.set_thread_status(self.watch_position_thread_name, 'error')
+                        if (
+                            self.shared_state.get("threads_status").get(
+                                self.watch_position_thread_name
+                            )
+                            != "error"
+                        ):
+                            self.shared_state.set_thread_status(
+                                self.watch_position_thread_name, "error"
+                            )
                 elif pos == next_map_pos:
-                    self.location_controler['current_map'] = self.location_controler['next_map']
+                    self.location_controler["current_map"] = self.location_controler[
+                        "next_map"
+                    ]
                     errors = 0
             time.sleep(0.1)
 
@@ -227,29 +257,31 @@ class Character:
     # ###     ###  ########     ###     ########### ########  ###    ####  ########
 
     def check_hp_map_id(self):
-        str_list = ['hp', 'map_id']
+        str_list = ["hp", "map_id"]
         result = self.check_list(str_list=str_list)
-        self.location_controler['current_map'] = result['map_id']
-        self.current_hp = result['hp']
+        self.location_controler["current_map"] = result["map_id"]
+        self.current_hp = result["hp"]
 
     def get_map_id(self):
         if self.is_location_ocr_avaliable():
-            return self.location_controler['current_map']
-        result = self.check_list(str_list=['map_id'])
-        self.location_controler['current_map'] = result['map_id']
-        self.location_controler['outdoors'] = self.database.get_map_info(result['map_id'])[0]
-        return self.location_controler['current_map']
+            return self.location_controler["current_map"]
+        result = self.check_list(str_list=["map_id"])
+        self.location_controler["current_map"] = result["map_id"]
+        self.location_controler["outdoors"] = self.database.get_map_info(
+            result["map_id"]
+        )[0]
+        return self.location_controler["current_map"]
 
     def login_dofus(self):
         self.window_id = self.login.run(
             account={
-                'login': self.accout_login,
-                'password': self.password,
-                'name': self.name
+                "login": self.accout_login,
+                "password": self.password,
+                "name": self.name,
             },
-            screen_size=self.screen.screen_size
+            screen_size=self.screen.screen_size,
         )
-        print(f'Character {self.name} has recived {self.window_id} windows_id')
+        print(f"Character {self.name} has recived {self.window_id} windows_id")
         time.sleep(12)
 
     def clean_queue(self):
@@ -261,20 +293,22 @@ class Character:
         self.add_init_functions_on_queue()
 
     def open_close_heavenbag(self):
-        keyboard.press_and_release('h')
+        keyboard.press_and_release("h")
         time.sleep(4)
 
     def get_zaaps(self):
         zaaps = self.database.get_zaaps()
         self.open_close_heavenbag()
         bag_type = self.screen.get_my_bag_type()
-        if bag_type == 'kerub':
+        if bag_type == "kerub":
             xconst = 0.158004158004158
             yconst = 0.45601173020527859
         else:
             yconst = 0.332844574780058651
             xconst = 0.36382536382536382
-        xcoord = self.screen.game_active_screen[0] + xconst * (self.screen.game_active_screen[2] - self.screen.game_active_screen[0])
+        xcoord = self.screen.game_active_screen[0] + xconst * (
+            self.screen.game_active_screen[2] - self.screen.game_active_screen[0]
+        )
         ycoord = self.screen.game_active_screen[3] * yconst
         pyautogui.click((xcoord, ycoord))
         time.sleep(4)
@@ -282,7 +316,7 @@ class Character:
             search_input_pos = self.screen.find_zaap_search_position()
         except ScreenError as e:
             traceback.print_tb(e.__traceback__)
-            raise CharacterCriticalError('You are not premium account!!! 💸')
+            raise CharacterCriticalError("You are not premium account!!! 💸")
         pyautogui.click(search_input_pos)
         for zaap in zaaps:
             zaap_name = zaap[0]
@@ -290,14 +324,14 @@ class Character:
             keyboard.write(zaap_name)
             if self.screen.has_zaap_marker():
                 self.my_zaaps.update({zaap[0]: (zaap[1], zaap[2])})
-            keyboard.press('control')
+            keyboard.press("control")
             time.sleep(0.1)
-            keyboard.press_and_release('a')
-            keyboard.release('control')
+            keyboard.press_and_release("a")
+            keyboard.release("control")
             time.sleep(0.1)
-            keyboard.press_and_release('delete')
+            keyboard.press_and_release("delete")
         time.sleep(0.1)
-        keyboard.press_and_release('esc')
+        keyboard.press_and_release("esc")
         time.sleep(0.5)
         self.open_close_heavenbag()
 
@@ -305,16 +339,16 @@ class Character:
         result = self.moving.execute_movement()
         has_more_movements = result[0]
         next_map_id = result[1][1]
-        self.location_controler['next_map_id'] = next_map_id
+        self.location_controler["next_map_id"] = next_map_id
         if has_more_movements:
             self.queue.append(self.move)
         self.set_wait_time(8)
-        self.time_controler['locked_timer'] = False
-        self.time_controler['started_at'] = time.time()
+        self.time_controler["locked_timer"] = False
+        self.time_controler["started_at"] = time.time()
 
     def collect(self):
         wait_time = self.harvesting.harvest()
-        self.time_controler['locked_timer'] = True
+        self.time_controler["locked_timer"] = True
         self.set_wait_time(wait_time)
 
     def check_if_harvest_over(self):
@@ -322,10 +356,10 @@ class Character:
             time.sleep(1)
 
     def set_wait_time(self, wait_time):
-        if self.time_controler['locked_timer']:
-            self.time_controler['seconds_to_wait'] += wait_time
+        if self.time_controler["locked_timer"]:
+            self.time_controler["seconds_to_wait"] += wait_time
         else:
-            self.time_controler['seconds_to_wait'] = wait_time
+            self.time_controler["seconds_to_wait"] = wait_time
 
     # :::        ::::::::      :::     :::::::::   ::::::::
     # :+:       :+:    :+:   :+: :+:   :+:    :+: :+:    :+:
@@ -336,15 +370,15 @@ class Character:
     # ########## ########  ###     ### #########   ########
 
     def load_metadata(self, account: dict):
-        self.load_damages(account.get('damage'))
-        self.class_name = account.get('class')
-        self.level = account.get('level')
-        self.name = account.get('name')
-        self.accout_login = account.get('login')
-        self.password = account.get('password')
-        self.load_primary_status(account.get('primaryCharacteristics'))
-        self.load_resistances(account.get('resistences'))
-        self.load_secundary_status(account.get('secundaryCharacteristics'))
+        self.load_damages(account.get("damage"))
+        self.class_name = account.get("class")
+        self.level = account.get("level")
+        self.name = account.get("name")
+        self.accout_login = account.get("login")
+        self.password = account.get("password")
+        self.load_primary_status(account.get("primaryCharacteristics"))
+        self.load_resistances(account.get("resistences"))
+        self.load_secundary_status(account.get("secundaryCharacteristics"))
 
     def load_damages(self, damage: dict):
         dict_damages = {
@@ -366,18 +400,18 @@ class Character:
 
     def load_resistances(self, resistances):
         dict_resistances = {
-                "Air (%)": "air",
-                "Air (fixed)": "air_fixed",
-                "Critical Hits (fixed)": "critical_hits_fixed",
-                "Earth (%)": "earth",
-                "Earth (fixed)": "earth_fixed",
-                "Fire (%)": "fire",
-                "Fire (fixed)": "fire_fixed",
-                "Neutral (%)": "neutral",
-                "Neutral (fixed)": "neutral_fixed",
-                "Pushback (fixed)": "pushback_fixed",
-                "Water (%)": "water",
-                "Water (fixed)": "water_fixed"
+            "Air (%)": "air",
+            "Air (fixed)": "air_fixed",
+            "Critical Hits (fixed)": "critical_hits_fixed",
+            "Earth (%)": "earth",
+            "Earth (fixed)": "earth_fixed",
+            "Fire (%)": "fire",
+            "Fire (fixed)": "fire_fixed",
+            "Neutral (%)": "neutral",
+            "Neutral (fixed)": "neutral_fixed",
+            "Pushback (fixed)": "pushback_fixed",
+            "Water (%)": "water",
+            "Water (fixed)": "water_fixed",
         }
         if resistances:
             for item in resistances:
@@ -399,9 +433,10 @@ class Character:
             "MP Parry": "mp_parry",
             "MP Reduction": "mp_reduction",
             "Prospecting": "prospecting",
-            "Summons": "summons"
+            "Summons": "summons",
         }
         if secundary_status:
             for item in secundary_status:
-                self.secundary_status[dict_secundary_status.get(item)] = secundary_status.get(item)
-
+                self.secundary_status[
+                    dict_secundary_status.get(item)
+                ] = secundary_status.get(item)

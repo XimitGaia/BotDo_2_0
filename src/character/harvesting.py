@@ -2,6 +2,7 @@
 import sys
 import os
 from pathlib import Path
+
 path = Path(__file__).resolve()
 sys.path.append(str(path.parents[2]))
 root_path = str(path.parents[1])
@@ -15,23 +16,23 @@ from PIL import ImageGrab
 from PIL import Image
 import numpy as np
 
+
 class Harvesting:
     def __init__(self, screen: Screen, database: Database, get_pos: callable):
         self.screen = screen
         self.database = database
         self.get_pos = get_pos
         self.items_to_collect = None
-        self.comparison_photos = {
-            'initial_state': {},
-            'after_click': {}
-        }
+        self.comparison_photos = {"initial_state": {}, "after_click": {}}
         self.cells_to_process = list()
 
     def set_items(self, items: list):
         self.items_to_collect = items
 
     def get_harvestables_cells(self, pos: tuple):
-        cell_ids = self.database.get_harvestables_cells_by_pos_and_world_zone(harvestables=self.items_to_collect, pos=pos)
+        cell_ids = self.database.get_harvestables_cells_by_pos_and_world_zone(
+            harvestables=self.items_to_collect, pos=pos
+        )
         cell_ids = [int(i[0]) for i in cell_ids]
         return cell_ids
 
@@ -89,12 +90,12 @@ class Harvesting:
     #     return False
 
     def select_all_items(self, cell_ids: list):
-        keyboard.press('shift')
+        keyboard.press("shift")
         for cell_id in cell_ids:
             position = self.screen.map_to_screen(cell_id)
             position = (
-                position[0] + int(self.screen.screen_size[0]*0.0036603221083),
-                position[1] - int(self.screen.screen_size[0]*0.0036603221083)
+                position[0] + int(self.screen.screen_size[0] * 0.0036603221083),
+                position[1] - int(self.screen.screen_size[0] * 0.0036603221083),
             )
             # initial_state_image = self.get_cell_image(cell_id)
             pyautogui.moveTo(position)
@@ -106,7 +107,7 @@ class Harvesting:
             # self.check_image_and_update(image=initial_state_image, state='initial_state', cell_id=cell_id)
             # self.check_image_and_update(image=after_click_image, state='after_click', cell_id=cell_id)
             time.sleep(0.2)
-        keyboard.release('shift')
+        keyboard.release("shift")
 
     def harvest(self):
         pos = self.get_pos()
@@ -114,33 +115,33 @@ class Harvesting:
             pos = self.screen.get_pos_ocr() + (1,)
         cell_ids = self.get_harvestables_cells(pos=pos)
         self.select_all_items(cell_ids)
-        wait_time = 4*len(cell_ids)
+        wait_time = 4 * len(cell_ids)
         return wait_time
 
     def get_cell_region(self, cell_id: int):
         central_position = self.screen.map_to_screen(cell_id)
-        radius = (0.0490483162518*self.screen.screen_size[0])/4
+        radius = (0.0490483162518 * self.screen.screen_size[0]) / 4
         region = (
-            central_position[0]-radius,
-            central_position[1]-radius,
-            central_position[0]+radius,
-            central_position[1]+radius
+            central_position[0] - radius,
+            central_position[1] - radius,
+            central_position[0] + radius,
+            central_position[1] + radius,
         )
         return region
 
 
-
 if __name__ == "__main__":
+
     def get_pos():
-        print('A')
+        print("A")
+
     screen = Screen()
     database = Database()
     har = Harvesting(screen, database, get_pos=get_pos)
     time.sleep(1)
     har.select_all_items([416, 338])
     time.sleep(5)
-    for image in har.comparison_photos['initial_state'].values():
+    for image in har.comparison_photos["initial_state"].values():
         image.show()
-    for image in har.comparison_photos['after_click'].values():
+    for image in har.comparison_photos["after_click"].values():
         image.show()
-

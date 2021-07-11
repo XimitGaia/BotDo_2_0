@@ -2,6 +2,7 @@
 import sys
 import os
 from pathlib import Path
+
 path = Path(__file__).resolve()
 sys.path.append(str(path.parents[2]))
 
@@ -11,8 +12,8 @@ import pyautogui
 import time
 import keyboard
 
-class Moving:
 
+class Moving:
     def __init__(self, screen: Screen, database: Database, get_map_id: callable):
         self.screen = screen
         self.database = database
@@ -30,11 +31,11 @@ class Moving:
         point_centered = self.screen.map_to_screen(cell)
         point = (point_centered[0] + offset_x, point_centered[1] + offset_y)
         pyautogui.moveTo(point)
-        keyboard.press('shift')
+        keyboard.press("shift")
         time.sleep(0.3)
-        #checar se tem monstro
+        # checar se tem monstro
         pyautogui.click(point)
-        keyboard.release('shift')
+        keyboard.release("shift")
 
     def get_next_move_data(self):
         next_move_data = None
@@ -54,9 +55,9 @@ class Moving:
     def execute_movement(self) -> list:
         next_move_data = self.get_next_move_data()
         if next_move_data:
-            if (self.max_attemps_to_move > 2):
-                #ver se tem outro elemento na msm celula como interativo
-                #trocar entre todos antes de deletar connection
+            if self.max_attemps_to_move > 2:
+                # ver se tem outro elemento na msm celula como interativo
+                # trocar entre todos antes de deletar connection
                 # row = (
                 #     0,
                 #     self.current_map_id[0],
@@ -94,11 +95,15 @@ class Moving:
     def get_path(self, start: int, destiny: int):
         path_maps = self.djikstra(start=start, destiny=destiny)
         if destiny in path_maps[-1]:
-            return self.djikstra_path_assembler(destiny=destiny, djikstra_list=path_maps)
+            return self.djikstra_path_assembler(
+                destiny=destiny, djikstra_list=path_maps
+            )
         return None
 
     def get_linked_maps(self, map_id: int):
-        connections = [i[0] for i in self.database.get_connectors_by_map_id(world_map_id=map_id)]
+        connections = [
+            i[0] for i in self.database.get_connectors_by_map_id(world_map_id=map_id)
+        ]
         return connections
 
     def djikstra_path_assembler(self, destiny, djikstra_list):
@@ -110,7 +115,9 @@ class Moving:
                 actual_map_id = mounted_path[0][0]
             except:
                 actual_map_id = mounted_path[0]
-            connectors = self.database.get_connectors_by_destiny(destiny_map_id=actual_map_id)
+            connectors = self.database.get_connectors_by_destiny(
+                destiny_map_id=actual_map_id
+            )
             connectors_ids = [i[0] for i in connectors]
             nex_map_id = int(list(set(connectors_ids) & set(layer_positions))[0])
             for connector in connectors:
@@ -123,7 +130,7 @@ class Moving:
         self.moving_to = destiny
         path = self.get_path(start=start, destiny=destiny)
         if not path:
-            print('FUDEU NO PATH, N ACHOU CAMINHO')
+            print("FUDEU NO PATH, N ACHOU CAMINHO")
         self.movement_queue = path
         self.max_attemps_to_move = 0
         self.next_map_id = None
@@ -132,10 +139,11 @@ class Moving:
         to_return = self.movement_queue.pop(0)
         return to_return
 
-if __name__ == '__main__':
-    def a():
-        print('i')
 
+if __name__ == "__main__":
+
+    def a():
+        print("i")
 
     s = Screen()
     d = Database()
