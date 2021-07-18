@@ -600,14 +600,14 @@ class Database:
         """
         return self.query(sql)
 
-    # def get_harvestables_cells_by_map_id(self, harvestables: list, map_id: int):
-    #     harvestables = [str(i.get('id')) for i in harvestables]
-    #     sql = f"""
-    #         SELECT hc.cell_number FROM harvestables_cells hc
-    #         WHERE world_map_id = {map_id} AND
-    #         item_id in ({', '.join(harvestables)})
-    #     """
-    #     return self.query(sql)
+    def get_harvestables_cells_by_map_id(self, harvestables: list, map_id: int):
+        harvestables = [str(i) for i in harvestables]
+        sql = f"""
+            SELECT hc.cell, hc.offset_x, hc.offset_y FROM harvestables_cells hc
+            WHERE hc.world_map_id = {map_id} AND
+            hc.harvestable_id in ({', '.join(harvestables)})
+        """
+        return self.query(sql)
 
     # :::     ::: ::::::::::: :::::::::: :::       :::
     # :+:     :+:     :+:     :+:        :+:       :+:

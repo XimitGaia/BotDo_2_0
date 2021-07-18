@@ -34,7 +34,7 @@ class Resource(Goal):
         to_return = self.routines[character_name]['clusters'][cluster_index]['maps_id'].pop(0)
         self.routines[character_name]['clusters'][cluster_index]['maps_id'].append(to_return)
         if self.routines[character_name]['action'] == 'MOVE':
-            self.routines[character_name]['action'] == 'HARVEST'
+            self.routines[character_name]['action'] = 'HARVEST'
             return [MoveAction(map_id=to_return)]
         else:
             return [
