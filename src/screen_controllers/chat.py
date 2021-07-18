@@ -3,6 +3,8 @@ import sys
 import os
 from pathlib import Path
 
+import pyautogui
+
 path = Path(__file__).resolve()
 sys.path.append(str(path.parents[1]))
 
@@ -44,33 +46,16 @@ class Chat:
         keyboard.press_and_release("+")
 
     def get_chat_position(self):
-        width_constant = 0.287941787941
-        chat_input_height_const = 0.02639296187
-        chat_height_const = 0.3504398826979
-        input_height = round(
-            self.screen.game_active_screen[3] * chat_input_height_const
-        )
-        chat_width = round(
-            width_constant
-            * (self.screen.game_active_screen[2] - self.screen.game_active_screen[0])
-        )
-        chat_height = round(self.screen.game_active_screen[3] * chat_height_const)
-        xcoord = self.screen.game_active_screen[0]
-        ycoord = self.screen.screen_size[1] - (chat_height + input_height)
-        self.chat_position = (xcoord, ycoord, xcoord + chat_width, ycoord + chat_height)
-
-    def filter_chat_info(self, text):
-        filter_text = f"{self.character_name}:(.+)"
-        filtered_text = re.findall(filter_text, text)
-        return [text.strip() for text in filtered_text]
+        self.chat_position = (
+            16 * self.screen.game_scale,
+            729.33333333 * self.screen.game_scale,
+            641.333333 * self.screen.game_scale,
+            996 * self.screen.game_scale
+            )
 
     def get_chat_content(self):
         text = self.screen.get_chat_content(self.chat_position)
-        filtered_text = self.filter_chat_info(text)
-        if filtered_text == []:
-            text = self.screen.get_chat_content(self.chat_position, ocr_config_number=2)
-            filtered_text = self.filter_chat_info(text)
-        return filtered_text
+        return text
 
     def chat_io(self, string_array):
         self.maximize_chat()
@@ -97,9 +82,9 @@ class Chat:
         self.cicle_list.append(frase)
         self.chat_io([frase])
 
-
-# time.sleep(2)
-# s = Screen()
-# c = Chat(s,'Pepinous')
-# time.sleep(2)
-# print(c.chat_io(['%hp%','%pos%']))
+if __name__ == "__main__":
+    time.sleep(2)
+    s = Screen()
+    c = Chat(s,'Pepinous')
+    time.sleep(2)
+    print(c.chat_io(['/mapid']))

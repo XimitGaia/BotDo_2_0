@@ -43,7 +43,6 @@ class Character:
         self.current_hp = None
         self.location_controler = {
             "current_map": None,
-            "outdoors": None,
             "next_map": None,
         }
         self.time_controler = {
@@ -62,9 +61,8 @@ class Character:
         self.moving = Moving(self.screen, self.database, self.get_map_id)
         self.harvesting = Harvesting(self.screen, self.database, self.get_map_id)
         self.chat = Chat(screen=self.screen, character_name=self.name)
-        self.chat_comands_map = Character.get_chat_comands_map()
+        self.chat_comands_map = self.get_chat_comands_map()
         self.add_init_functions_on_queue()
-        #self.start_position_watcher()
 
     def run_function(self):
         if len(self.queue) > 0:
@@ -87,7 +85,7 @@ class Character:
             elapsed_time = time.time() - self.time_controler.get("started_at")
             while elapsed_time < self.time_controler.get("seconds_to_wait"):
                 if (
-                    self.location_controler["map_id"]
+                    self.location_controler["current_map"]
                     == self.location_controler["next_map_id"]
                 ):
                     time.sleep(0.5)
@@ -96,10 +94,9 @@ class Character:
                 elapsed_time = time.time() - self.time_controler.get("started_at")
             self.time_controler.update({"started_at": 0, "seconds_to_wait": 0})
 
-    @staticmethod
-    def get_chat_comands_map():
+    def get_chat_comands_map(self):
         return {
-            "hp": {"string": "/g %hp%", "regex": re.compile(r"(\d+)"), "type": "int"},
+            "hp": {"string": "/g %hp%", "regex": re.compile(rf"{self.name}: (\d+)"), "type": "int"},
             "pos": {
                 "string": "/g %pos%",
                 "regex": re.compile(r"(-?\d{1,2})"),
@@ -166,6 +163,7 @@ class Character:
         for str_item in str_list:
             chat_list.append(self.get_check_string(str_item))
         results = self.chat.chat_io(string_array=chat_list)
+        results = results.split('\n')
         to_return = dict()
         count = 0
         for str_item in str_list:
@@ -181,72 +179,8 @@ class Character:
                 self.chat.refresh_frase()
                 self.chat.refresh_frase()
                 to_return = self.check_list(str_list)
-        # print(to_return)
         return to_return
 
-    def is_location_ocr_avaliable(self):
-        return (
-            self.shared_state.get("threads_status").get(self.watch_position_thread_name)
-            == "running"
-        )
-
-    def is_indoor_diplacement(self):
-        is_next_map_outdoor = self.database.get_map_info(
-            self.location_controler["next_map"]
-        )[0][3]
-        return not (self.location_controler["outdoor"] and is_next_map_outdoor)
-
-    def wait_outdoor_connections(self):
-        watch_position_status = self.shared_state.get("threads_status").get(
-            self.watch_position_thread_name
-        )
-        while self.is_indoor_diplacement():
-            if watch_position_status != "indoor_waiting":
-                self.shared_state.set_thread_status(
-                    self.watch_position_thread_name, "indoor_waiting"
-                )
-            time.sleep(0.5)
-        if watch_position_status != "running":
-            self.shared_state.set_thread_status(
-                self.watch_position_thread_name, "running"
-            )
-
-    def watch_position(self):
-        self.watch_position_thread_name = f"{self.name}_watch_position_thread"
-        self.shared_state.set_thread_status(self.watch_position_thread_name, "running")
-        errors = 0
-        while True:
-            self.shared_state.check_pause_command(
-                thread_name=self.watch_position_thread_name
-            )
-            self.wait_outdoor_connections()
-            if self.window_id == self.screen.get_foreground_screen_id():
-                pos = self.screen.get_pos_ocr()
-                next_map_pos = self.database.get_map_info(
-                    world_map_id=self.location_controler["next_map"]
-                )[0][1:3]
-                if len(pos) < 2:
-                    errors += 1
-                    if errors > 5:
-                        if (
-                            self.shared_state.get("threads_status").get(
-                                self.watch_position_thread_name
-                            )
-                            != "error"
-                        ):
-                            self.shared_state.set_thread_status(
-                                self.watch_position_thread_name, "error"
-                            )
-                elif pos == next_map_pos:
-                    self.location_controler["current_map"] = self.location_controler[
-                        "next_map"
-                    ]
-                    errors = 0
-            time.sleep(0.1)
-
-    def start_position_watcher(self):
-        thread = threading.Thread(target=self.watch_position, args=())
-        thread.start()
 
     #    :::      :::::::: ::::::::::: ::::::::::: ::::::::  ::::    :::  ::::::::
     #   :+: :+:   :+:    :+:    :+:         :+:    :+:    :+: :+:+:   :+: :+:    :+:
@@ -263,14 +197,11 @@ class Character:
         self.current_hp = result["hp"]
 
     def get_map_id(self):
-        if self.is_location_ocr_avaliable():
-            return self.location_controler["current_map"]
-        result = self.check_list(str_list=["map_id"])
-        self.location_controler["current_map"] = result["map_id"]
-        self.location_controler["outdoors"] = self.database.get_map_info(
-            result["map_id"]
-        )[0]
-        return self.location_controler["current_map"]
+        str_list = ["map_id"]
+        result = self.check_list(str_list=str_list)
+        map_id = result["map_id"]
+        self.location_controler["current_map"] = map_id
+        return map_id
 
     def login_dofus(self):
         self.window_id = self.login.run(

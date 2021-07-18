@@ -55,9 +55,10 @@ def run(api_data):
         mode = goal_and_accounts.get("mode")
         accounts_name = [account_data.get('name') for account_data in goal_and_accounts.get("accounts")]
         if mode == "resources":
+            resources = [i.get('value') for i in goal_and_accounts.get("items")]
             goal = Resource(
                 database=database,
-                resources=goal_and_accounts.get("items"),
+                resources=resources,
                 accounts_name=accounts_name,
             )
         else:

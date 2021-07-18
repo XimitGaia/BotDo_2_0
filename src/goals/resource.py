@@ -27,6 +27,7 @@ class Resource(Goal):
         self.index = 0
         self.cluster_list = list()
         self.routines = dict()
+        self.create_routines()
 
     def get_next_step(self, character_name: str) -> ActionInterface:
         cluster_index = self.routines[character_name]['cluster_index']

@@ -149,7 +149,7 @@ if __name__ == "__main__":
     d = Database()
     m = Moving(s, d, a)
     # f = m.get_path(191105026, 191106048)
-    f = m.get_path(191105024, 153880835)
+    f = m.get_path(171967506, 171968530)
     print(f)
     time.sleep(1)
     for i in f:

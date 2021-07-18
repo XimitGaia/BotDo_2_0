@@ -88,6 +88,7 @@ class Screen:
         high = action_screen_proportion * width
         self.game_active_screen = (round(X), 0, round(X + width), round(0 + high))
 
+
     def get_bottom_region(self):
         self.bottom_region = (
             0,

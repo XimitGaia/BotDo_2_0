@@ -1,80 +1,80 @@
-[
-  {
-    "accounts": [
-      {
-        "avatarImage": "",
-        "class": "Enutrof",
-        "damages": {
-          "Air (fixed)": "0",
-          "Critical damage": "0",
-          "Damage": "0",
-          "Earth (fixed)": "0",
-          "Fire (fixed)": "0",
-          "Neutral (fixed)": "0",
-          "Pushback": "0",
-          "Reflect": "0",
-          "Traps (Power)": "0",
-          "Traps (fixed)": "0",
-          "Water (fixed)": "0"
+  [
+    {
+      "accounts": [
+        {
+          "avatarImage": "",
+          "class": "Enutrof",
+          "damages": {
+            "Air (fixed)": "0",
+            "Critical damage": "0",
+            "Damage": "0",
+            "Earth (fixed)": "0",
+            "Fire (fixed)": "0",
+            "Neutral (fixed)": "0",
+            "Pushback": "0",
+            "Reflect": "0",
+            "Traps (Power)": "0",
+            "Traps (fixed)": "0",
+            "Water (fixed)": "0"
+          },
+          "fullSizeImage": "",
+          "level": 200,
+          "name": "Pepinous",
+          "primaryCharacteristics": {
+            "AP": "7",
+            "Agility": "76",
+            "Chance": "498",
+            "Critical": "0",
+            "Intelligence": "0",
+            "MP": "3",
+            "Power": "80",
+            "Range": "0",
+            "Strength": "0",
+            "Vitality": "3",
+            "Wisdom": "100"
+          },
+          "professions": {},
+          "resistences": {
+            "Air (%)": "0",
+            "Air (fixed)": "0",
+            "Critical Hits (fixed)": "0",
+            "Earth (%)": "0",
+            "Earth (fixed)": "0",
+            "Fire (%)": "0",
+            "Fire (fixed)": "0",
+            "Neutral (%)": "0",
+            "Neutral (fixed)": "0",
+            "Pushback (fixed)": "0",
+            "Water (%)": "0",
+            "Water (fixed)": "0"
+          },
+          "secundaryCharacteristics": {
+            "AP Parry": "10",
+            "AP Reduction": "10",
+            "Dodge": "7",
+            "Heals": "0",
+            "Initiative": "574",
+            "Lock": "7",
+            "MP Parry": "10",
+            "MP Reduction": "10",
+            "Prospecting": "192",
+            "Summons": "1"
+          },
+          "server": "Crocabulia",
+          "login": "sievers12",
+          "password": "4160897@sievers123"
+        }
+      ],
+      "mode": "resources",
+      "items": [
+        {
+          "value": "Malt",
+          "label": "Malt"
         },
-        "fullSizeImage": "",
-        "level": 200,
-        "name": "Pepinous",
-        "primaryCharacteristics": {
-          "AP": "7",
-          "Agility": "76",
-          "Chance": "498",
-          "Critical": "0",
-          "Intelligence": "0",
-          "MP": "3",
-          "Power": "80",
-          "Range": "0",
-          "Strength": "0",
-          "Vitality": "3",
-          "Wisdom": "100"
-        },
-        "professions": {},
-        "resistences": {
-          "Air (%)": "0",
-          "Air (fixed)": "0",
-          "Critical Hits (fixed)": "0",
-          "Earth (%)": "0",
-          "Earth (fixed)": "0",
-          "Fire (%)": "0",
-          "Fire (fixed)": "0",
-          "Neutral (%)": "0",
-          "Neutral (fixed)": "0",
-          "Pushback (fixed)": "0",
-          "Water (%)": "0",
-          "Water (fixed)": "0"
-        },
-        "secundaryCharacteristics": {
-          "AP Parry": "10",
-          "AP Reduction": "10",
-          "Dodge": "7",
-          "Heals": "0",
-          "Initiative": "574",
-          "Lock": "7",
-          "MP Parry": "10",
-          "MP Reduction": "10",
-          "Prospecting": "192",
-          "Summons": "1"
-        },
-        "server": "Crocabulia",
-        "login": "sievers12",
-        "password": "4160897@sievers123"
-      }
-    ],
-    "mode": "resources",
-    "items": [
-      {
-        "value": "Malt",
-        "label": "Malt"
-      },
-      {
-        "value": "Hop Hop",
-        "label": "Hop Hop"
-      }
-    ]
-  }
-]
+        {
+          "value": "Hop Hop",
+          "label": "Hop Hop"
+        }
+      ]
+    }
+  ]
