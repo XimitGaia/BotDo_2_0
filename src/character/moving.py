@@ -109,7 +109,7 @@ class Moving:
     def djikstra_path_assembler(self, destiny, djikstra_list):
         djikstra_list = djikstra_list[:-1]
         mounted_path = [destiny]
-        while len(djikstra_list) > 1:
+        while len(djikstra_list) > 0:
             layer_positions = djikstra_list.pop()
             try:
                 actual_map_id = mounted_path[0][0]
