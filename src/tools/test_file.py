@@ -35,6 +35,7 @@ while True:
 	# images, ensuring that the difference image is returned
 	(score, diff) = compare_ssim(grayA, grayB, full=True)
 	diff = (diff * 255).astype("uint8")
+	print(compare_ssim(grayA, grayB))
 	print("SSIM: {}".format(score))
 # threshold the difference image, followed by finding contours to
 # obtain the regions of the two input images that differ

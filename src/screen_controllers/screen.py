@@ -20,11 +20,9 @@ from src.tools.search import Search
 from src.errors.screen_errors import ScreenError
 from PIL import Image
 from PIL import ImageGrab
+from skimage.metrics import structural_similarity
 
 pytesseract.pytesseract.tesseract_cmd = r"C:\Program Files\Tesseract-OCR\tesseract.exe"
-
-# proportioon Widht_screen/width_action_screen = 1.415
-# proportion width_sction_screen/high_action_scrren = 1.255
 
 
 class Screen:
@@ -64,9 +62,7 @@ class Screen:
             round(74.666 * self.game_scale),
         )
 
-    def get_pos_ocr(self):
-        time.sleep(1)
-        image = ImageGrab.grab(self.coordinates_region)
+    def pos_ocr(self, image):
         image = PIL.ImageOps.invert(image)
         config = "--psm 13 --oem 3"
         text = pytesseract.image_to_string(image, config=config)
@@ -87,7 +83,6 @@ class Screen:
         X = (self.screen_size[0] - width) / 2
         high = action_screen_proportion * width
         self.game_active_screen = (round(X), 0, round(X + width), round(0 + high))
-
 
     def get_bottom_region(self):
         self.bottom_region = (
@@ -142,6 +137,19 @@ class Screen:
 
     def get_foreground_screen_id(self):
         return win32gui.GetForegroundWindow()
+
+    def get_screen_image(self):
+        return ImageGrab.grab()
+
+    def crop_coords_from_screen_image(self, image):
+
+    def image_ssim(self, img1, img2):
+        img1 = numpy.array(img1)
+        img2 = numpy.array(img2)
+        gray1 = cv2.cvtColor(img1, cv2.COLOR_BGR2GRAY)
+        gray2 = cv2.cvtColor(img2, cv2.COLOR_BGR2GRAY)
+        return structural_similarity(gray1,gray2)
+
 
     #        :::::::::      ::: ::::::::::: ::::::::::: :::        ::::::::::            :::   :::    ::::::::  :::::::::  ::::::::::
     #       :+:    :+:   :+: :+:   :+:         :+:     :+:        :+:                  :+:+: :+:+:  :+:    :+: :+:    :+: :+:
@@ -248,24 +256,6 @@ class Screen:
     #   +#+    +#+    +#+     +#+    +#+ +#+        +#+    +#+        +#+
     #  #+#    #+#    #+#     #+#    #+# #+#        #+#    #+# #+#    #+#
     #  ########     ###     ###    ### ########## ###    ###  ########
-
-    def get_my_bag_type(self):
-        width_constant = 0.195426195426195
-        height_constant = 0.0982404692082
-        ocr_config = "--psm 6 --oem 3"
-        screen_image = ImageGrab.grab(
-            (
-                0,
-                0,
-                width_constant * (self.game_active_screen_width),
-                height_constant * (self.game_active_screen_height),
-            )
-        )
-        text = pytesseract.image_to_string(screen_image, config=ocr_config)
-        if text.split(" ")[0].strip() == "Kerub":
-            return "kerub"
-        else:
-            return "amakna"
 
     def find_zaap_search_position(self):
         result = self.search.search_color(

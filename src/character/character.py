@@ -3,6 +3,8 @@ import sys
 import os
 from pathlib import Path
 
+import numpy
+
 path = Path(__file__).resolve()
 sys.path.append(str(path.parents[1]))
 root_path = str(path.parents[1])
@@ -43,6 +45,7 @@ class Character:
         self.current_hp = None
         self.location_controler = {
             "current_map": None,
+            "current_map_image": None,
             "next_map": None,
         }
         self.time_controler = {
@@ -84,15 +87,29 @@ class Character:
         if not self.time_controler["locked_timer"]:
             elapsed_time = time.time() - self.time_controler.get("started_at")
             while elapsed_time < self.time_controler.get("seconds_to_wait"):
-                if (
-                    self.location_controler["current_map"]
-                    == self.location_controler["next_map_id"]
-                ):
+                if self.has_map_change():
                     time.sleep(0.5)
                     break
                 time.sleep(0.05)
                 elapsed_time = time.time() - self.time_controler.get("started_at")
             self.time_controler.update({"started_at": 0, "seconds_to_wait": 0})
+
+    def has_map_change(self):
+        if self.window_id == self.screen.get_foreground_screen_id():
+            actual_screen = self.screen.get_screen_image()
+            actual_pos, actual_active_screen = self.crop_pos_and_active_screen(actual_screen)
+            last_pos, last_active_screen = self.crop_pos_and_active_screen(self.location_controler["current_map_image"])
+            if self.screen.pos_ocr(actual_pos) == self.screen.pos_ocr(last_pos):
+                return True
+            if self.screen.image_ssim(actual_active_screen, last_active_screen) < 0.4:
+                return True
+        return False
+
+
+    def crop_pos_and_active_screen(self, image):
+        pos = image.crop(self.screen.coordinates_region)
+        active_screen = image.crop(self.screen.game_active_screen)
+        return pos, active_screen
 
     def get_chat_comands_map(self):
         return {
@@ -267,10 +284,11 @@ class Character:
         self.open_close_heavenbag()
 
     def move(self):
+        self.location_controler["current_map_image"] = self.screen.get_screen_image()
         result = self.moving.execute_movement()
         has_more_movements = result[0]
-        next_map_id = result[1][1]
-        self.location_controler["next_map_id"] = next_map_id
+        next_map = result[1][1]
+        self.location_controler["next_map"] = next_map
         if has_more_movements:
             self.queue.append(self.move)
         self.set_wait_time(8)
