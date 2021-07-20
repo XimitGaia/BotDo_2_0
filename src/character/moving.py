@@ -56,16 +56,7 @@ class Moving:
         next_move_data = self.get_next_move_data()
         if next_move_data:
             if self.max_attemps_to_move > 2:
-                # ver se tem outro elemento na msm celula como interativo
-                # trocar entre todos antes de deletar connection
-                # row = (
-                #     0,
-                #     self.current_map_id[0],
-                #     self.current_map_id[1],
-                #     1
-                # )
-                # self.database.update_world_map(row=row, column_name=direction)
-                # self.register_path_to_move(self.current_map_id, self.moving_to)
+                # MARCA O ID DO CONECTOR PARA NÃO SER USADO NO CAMINHO E REFAZ O CAMINHO
                 return [True, None]
             self.move_to(connection=next_move_data)
             return [len(self.movement_queue) > 0, next_move_data]

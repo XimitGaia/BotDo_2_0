@@ -141,11 +141,12 @@ class Screen:
     def get_screen_image(self):
         return ImageGrab.grab()
 
-    def crop_coords_from_screen_image(self, image):
+    def get_active_screen_image(self):
+        return ImageGrab.grab(self.game_active_screen)
 
     def image_ssim(self, img1, img2):
-        img1 = numpy.array(img1)
-        img2 = numpy.array(img2)
+        img1 = np.array(img1)
+        img2 = np.array(img2)
         gray1 = cv2.cvtColor(img1, cv2.COLOR_BGR2GRAY)
         gray2 = cv2.cvtColor(img2, cv2.COLOR_BGR2GRAY)
         return structural_similarity(gray1,gray2)

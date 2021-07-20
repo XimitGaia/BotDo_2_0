@@ -367,20 +367,20 @@ def insert_zaaps():
     database.insert_values_zaaps_2021_05_05()
 
 
-# thread_insert = threading.Thread(target=consume_queue, args=(queue,))
-# thread_insert.start()
-# monsters_and_drops_inserter()
-# del items
-# world_map_inserter()
-# elements = unpacker.dofus_open('elements.ele')
-# connections = dict()
-# monster_location_inserter()
-# set_connections()
-# interactives_and_harvestables_inserter()
-# insert_connectors()
-# finished_inserting = True
-# thread_insert.join()
-# print('Finishing...', end='\r')
-# insert_zaaps()
+thread_insert = threading.Thread(target=consume_queue, args=(queue,))
+thread_insert.start()
+monsters_and_drops_inserter()
+del items
+world_map_inserter()
+elements = unpacker.dofus_open('elements.ele')
+connections = dict()
+monster_location_inserter()
+set_connections()
+interactives_and_harvestables_inserter()
+insert_connectors()
+finished_inserting = True
+thread_insert.join()
+print('Finishing...', end='\r')
+insert_zaaps()
 create_harvestables_location_view()
 print("Finishing   OK")

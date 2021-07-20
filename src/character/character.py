@@ -96,20 +96,10 @@ class Character:
 
     def has_map_change(self):
         if self.window_id == self.screen.get_foreground_screen_id():
-            actual_screen = self.screen.get_screen_image()
-            actual_pos, actual_active_screen = self.crop_pos_and_active_screen(actual_screen)
-            last_pos, last_active_screen = self.crop_pos_and_active_screen(self.location_controler["current_map_image"])
-            if self.screen.pos_ocr(actual_pos) == self.screen.pos_ocr(last_pos):
-                return True
-            if self.screen.image_ssim(actual_active_screen, last_active_screen) < 0.4:
+            actual_active_screen = self.screen.get_active_screen_image()
+            if self.screen.image_ssim(self.location_controler["current_map_image"], actual_active_screen) < 0.35:
                 return True
         return False
-
-
-    def crop_pos_and_active_screen(self, image):
-        pos = image.crop(self.screen.coordinates_region)
-        active_screen = image.crop(self.screen.game_active_screen)
-        return pos, active_screen
 
     def get_chat_comands_map(self):
         return {
@@ -284,11 +274,15 @@ class Character:
         self.open_close_heavenbag()
 
     def move(self):
-        self.location_controler["current_map_image"] = self.screen.get_screen_image()
+        self.location_controler["current_map_image"] = self.screen.get_active_screen_image()
         result = self.moving.execute_movement()
+        print(result)
         has_more_movements = result[0]
-        next_map = result[1][1]
-        self.location_controler["next_map"] = next_map
+        if result[1]:
+            next_map = result[1][1]
+            self.location_controler["next_map"] = next_map
+        else:
+            self.location_controler["next_map"] = None
         if has_more_movements:
             self.queue.append(self.move)
         self.set_wait_time(8)

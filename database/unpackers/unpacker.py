@@ -13,7 +13,8 @@ from pydofus.ele import ELE, InvalidELEFile
 from pydofus.dlm import DLM, InvalidDLMFile
 from pydofus.bin import BinReader
 
-dofus_path = f"{os.getenv('LOCALAPPDATA')}{os.sep}Ankama{os.sep}zaap{os.sep}dofus"
+# dofus_path = f"{os.getenv('LOCALAPPDATA')}{os.sep}Ankama{os.sep}zaap{os.sep}dofus"
+dofus_path = f"D:{os.sep}Ankama{os.sep}Dofus"
 output_base_path = f"{path.parents[1]}{os.sep}jsons"
 
 
