@@ -169,6 +169,7 @@ class Database:
                 "temp": False,
                 "sql": """
                     CREATE TABLE *table*(
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,
                         origin INTEGER,
                         destiny INTEGER,
                         type INTEGER,
