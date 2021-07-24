@@ -88,7 +88,7 @@ class Character:
             elapsed_time = time.time() - self.time_controler.get("started_at")
             while elapsed_time < self.time_controler.get("seconds_to_wait"):
                 if self.has_map_change():
-                    time.sleep(0.5)
+                    time.sleep(1)
                     break
                 time.sleep(0.05)
                 elapsed_time = time.time() - self.time_controler.get("started_at")
@@ -275,14 +275,7 @@ class Character:
 
     def move(self):
         self.location_controler["current_map_image"] = self.screen.get_active_screen_image()
-        result = self.moving.execute_movement()
-        print(result)
-        has_more_movements = result[0]
-        if result[1]:
-            next_map = result[1][1]
-            self.location_controler["next_map"] = next_map
-        else:
-            self.location_controler["next_map"] = None
+        has_more_movements = self.moving.execute_movement()
         if has_more_movements:
             self.queue.append(self.move)
         self.set_wait_time(8)

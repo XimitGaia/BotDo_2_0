@@ -573,7 +573,7 @@ class Database:
 
     def get_connectors_by_map_id(self, world_map_id: int):
         sql = f"""
-            SELECT conn.destiny
+            SELECT conn.destiny, conn.id
             FROM connections conn
             WHERE conn.origin = {world_map_id}
         """
@@ -581,7 +581,7 @@ class Database:
 
     def get_connectors_by_destiny(self, destiny_map_id: int):
         sql = f"""
-            SELECT conn.origin, conn.destiny, conn.cell, conn.offset_x, conn.offset_y
+            SELECT conn.origin, conn.destiny, conn.cell, conn.offset_x, conn.offset_y, conn.id
             FROM connections conn
             WHERE conn.destiny = {destiny_map_id}
         """

@@ -23,9 +23,10 @@ class Moving:
         self.movement_queue = None
         self.get_map_id = get_map_id
         self.max_attemps_to_move = 0
+        self.connection_error = list()
 
     def move_to(self, connection: tuple) -> bool:
-        cell, offset_x, offset_y = connection[2:]
+        cell, offset_x, offset_y = connection[2:5]
         offset_x *= self.screen.game_scale
         offset_y *= self.screen.game_scale
         point_centered = self.screen.map_to_screen(cell)
@@ -56,12 +57,13 @@ class Moving:
         next_move_data = self.get_next_move_data()
         if next_move_data:
             if self.max_attemps_to_move > 2:
-                # MARCA O ID DO CONECTOR PARA NÃO SER USADO NO CAMINHO E REFAZ O CAMINHO
-                return [True, None]
+                self.connection_error.append(next_move_data[5])
+                self.register_path_to_move(start=self.current_map_id, destiny=self.moving_to)
+                return True
             self.move_to(connection=next_move_data)
-            return [len(self.movement_queue) > 0, next_move_data]
+            return len(self.movement_queue) > 0
         self.previuous_move_data = None
-        return [False, next_move_data]
+        return False
 
     def djikstra(self, start, destiny):
         processed_maps = [start]
@@ -93,7 +95,7 @@ class Moving:
 
     def get_linked_maps(self, map_id: int):
         connections = [
-            i[0] for i in self.database.get_connectors_by_map_id(world_map_id=map_id)
+            i[0] for i in self.database.get_connectors_by_map_id(world_map_id=map_id) if i[1] not in self.connection_error
         ]
         return connections
 
