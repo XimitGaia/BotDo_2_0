@@ -209,46 +209,6 @@ def set_connections():
             for transition in vertex.get("transition"):
                 move_type = transition.get("type")
                 cell = transition.get("cell")
-                if move_type == 0:
-                    if cell in np.arange(13, 546, 28):
-                        queue.put(
-                            ("connector", (origin, destiny, move_type, cell, 72, 0))
-                        )
-                    else:
-                        queue.put(
-                            ("connector", (origin, destiny, move_type, cell, 28, 0))
-                        )
-                    continue
-                elif move_type == 2:
-                    if 531 < cell < 546:
-                        queue.put(
-                            ("connector", (origin, destiny, move_type, cell, 0, 38))
-                        )
-                    else:
-                        queue.put(
-                            ("connector", (origin, destiny, move_type, cell, 0, 16))
-                        )
-                    continue
-                elif move_type == 4:
-                    if cell in np.arange(14, 547, 28):
-                        queue.put(
-                            ("connector", (origin, destiny, move_type, cell, -72, 0))
-                        )
-                    else:
-                        queue.put(
-                            ("connector", (origin, destiny, move_type, cell, -28, 0))
-                        )
-                    continue
-                elif move_type == 6:
-                    if 13 < cell < 27:
-                        queue.put(
-                            ("connector", (origin, destiny, move_type, cell, 0, -30))
-                        )
-                    else:
-                        queue.put(
-                            ("connector", (origin, destiny, move_type, cell, 0, -8))
-                        )
-                    continue
                 if origin not in connections:
                     connections.update({origin: dict()})
                 connections[origin].update({cell: [origin, destiny, move_type, cell]})
@@ -275,6 +235,8 @@ def insert_map_elements_and_harvestables(file_path):
     with open(file_path, "r") as json_file:
         map_data = json.load(json_file)
         map_id = int(map_data.get("mapId"))
+        if int(map_id) == 101715463:
+            print()
         layers = map_data.get("layers")
         for layer in layers:
             cells = layer.get("cells")
@@ -347,14 +309,39 @@ def insert_map_elements_and_harvestables(file_path):
                             )
                         )
 
+def get_connections_offsets(cell_connection: tuple):
+    connection_type = cell_connection[2]
+    border_range_by_type = {
+        0: lambda x: x[3] in np.arange(13, 546, 28),
+        2: lambda x: 531 < x[3] < 546,
+        4: lambda x: x[3] in np.arange(14, 547, 28),
+        6: lambda x: 13 < x[3] < 27,
+    }
+    border_range_validator = border_range_by_type.get(connection_type)
+    if border_range_validator is None:
+        return (0, 0)
+    offsets_by_type_and_border = {
+        '0_True': lambda: (72, 0),
+        '0_False': lambda: (28, 0),
+        '2_True': lambda: (0, 38),
+        '2_False': lambda: (0, 16),
+        '4_True': lambda: (-72, 0),
+        '4_False': lambda: (-28, 0),
+        '6_True': lambda: (0, -30),
+        '6_False': lambda: (0, -8)
+    }
+    is_border = border_range_validator(cell_connection)
+    type_and_border = f'{connection_type}_{is_border}'
+    get_offsets = offsets_by_type_and_border[type_and_border]
+    offsets = get_offsets()
+    return offsets
 
 def insert_connectors():
     for origin in connections:
         for cell in connections[origin]:
             data = tuple(connections[origin][cell])
-            if len(data) == 4:
-                data = data + (0, 0)
-            queue.put(("connector", data))
+            offsets = get_connections_offsets(cell_connection=data)
+            queue.put(("connector", data + offsets))
 
 
 def create_harvestables_location_view():
