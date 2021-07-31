@@ -66,58 +66,52 @@ class Moving:
         return False
 
     def djikstra(self, start, destiny):
-        processed_maps = [start]
-        path_maps = [[start]]
-        path_maps_index = 0
-        while destiny not in path_maps[-1]:
+        processed_connections = [i for i in self.database.get_connectors_by_origin_map_id(start) if i not in self.connection_error]
+        path_connections = [processed_connections.copy()]
+        last_connections = self.database.get_connectors_by_destiny_map_id(destiny)
+        path_connections_index = 0
+        while True:
             layer = list()
-            for map_id in path_maps[path_maps_index]:
-                linked_maps = self.get_linked_maps(map_id)
-                for linked_map_id in linked_maps:
-                    if linked_map_id in processed_maps:
-                        continue
-                    processed_maps.append(linked_map_id)
-                    layer.append(linked_map_id)
-            if len(layer) > 0:
-                path_maps.append(layer)
+            for connection_id in path_connections[path_connections_index]:
+                next_connections = [i for i in self.get_next_connectors(connection_id) if i not in processed_connections]
+                processed_connections.extend(next_connections)
+                layer.extend(next_connections)
+            destiny_connections = list(set(last_connections) & set(layer))
+            if len(destiny_connections) > 0:
+                path_connections.append(destiny_connections)
+                return ("sucess", path_connections)
+            elif len(layer) > 0:
+                path_connections.append(layer)
             else:
-                break
-            path_maps_index += 1
-        return path_maps
+                return("error", path_connections)
+            path_connections_index += 1
 
     def get_path(self, start: int, destiny: int):
         path_maps = self.djikstra(start=start, destiny=destiny)
-        if destiny in path_maps[-1]:
+        if path_maps[0] == "sucess":
             return self.djikstra_path_assembler(
-                destiny=destiny, djikstra_list=path_maps
+                djikstra_list=path_maps[1]
             )
         return None
 
-    def get_linked_maps(self, map_id: int):
+    def get_next_connectors(self, connection_id: int):
         connections = [
-            i[0] for i in self.database.get_connectors_by_map_id(world_map_id=map_id) if i[1] not in self.connection_error
+            i for i in self.database.get_next_connectors_by_connector_id(connection_id) if i not in self.connection_error
         ]
         return connections
 
-    def djikstra_path_assembler(self, destiny, djikstra_list):
-        djikstra_list = djikstra_list[:-1]
-        mounted_path = [destiny]
+    def djikstra_path_assembler(self, djikstra_list):
+        connectors_path = [djikstra_list.pop()[0]]
         while len(djikstra_list) > 0:
-            layer_positions = djikstra_list.pop()
-            try:
-                actual_map_id = mounted_path[0][0]
-            except:
-                actual_map_id = mounted_path[0]
-            connectors = self.database.get_connectors_by_destiny(
-                destiny_map_id=actual_map_id
+            connection_layer = djikstra_list.pop()
+            actual_connector = connectors_path[0]
+            connectors = self.database.get_previous_connectors_by_connector_id(
+                connection_id=actual_connector
             )
-            connectors_ids = [i[0] for i in connectors]
-            nex_map_id = int(list(set(connectors_ids) & set(layer_positions))[0])
-            for connector in connectors:
-                if connector[0] == nex_map_id:
-                    mounted_path.insert(0, connector)
-                    break
-        return mounted_path[:-1]
+            next_connector = int(list(set(connectors) & set(connection_layer))[0])
+            connectors_path.insert(0, next_connector)
+        to_return = [self.database.get_connector_info_by_id(i) for i in connectors_path]
+        return to_return
 
     def register_path_to_move(self, start, destiny):
         self.moving_to = destiny
@@ -142,9 +136,5 @@ if __name__ == "__main__":
     d = Database()
     m = Moving(s, d, a)
     # f = m.get_path(191105026, 191106048)
-    f = m.get_path(171967506, 171968530)
+    f = m.get_path(101715479, 68551174)
     print(f)
-    time.sleep(1)
-    for i in f:
-        m.move_to(i)
-        time.sleep(7)

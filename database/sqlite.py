@@ -571,21 +571,48 @@ class Database:
         """
         return self.query(sql)
 
-    def get_connectors_by_map_id(self, world_map_id: int):
+    def get_connectors_by_origin_map_id(self, world_map_id: int):
         sql = f"""
-            SELECT conn.destiny, conn.id
+            SELECT conn.id
             FROM connections conn
             WHERE conn.origin = {world_map_id}
         """
-        return self.query(sql)
+        result = [i[0] for i in self.query(sql)]
+        return result
 
-    def get_connectors_by_destiny(self, destiny_map_id: int):
+    def get_previous_connectors_by_connector_id(self, connection_id):
         sql = f"""
-            SELECT conn.origin, conn.destiny, conn.cell, conn.offset_x, conn.offset_y, conn.id
+            SELECT conn.id from connections conn
+            WHERE conn.destiny = (SELECT origin FROM connections WHERE id = {connection_id})
+        """
+        result = [i[0] for i in self.query(sql)]
+        return result
+
+    def get_next_connectors_by_connector_id(self, connection_id):
+        sql = f"""
+            SELECT conn.id from connections conn
+            WHERE conn.origin = (SELECT destiny FROM connections WHERE id = {connection_id})
+        """
+        result = [i[0] for i in self.query(sql)]
+        return result
+
+    def get_connectors_by_destiny_map_id(self, destiny_map_id: int):
+        sql = f"""
+            SELECT conn.id
             FROM connections conn
             WHERE conn.destiny = {destiny_map_id}
         """
-        return self.query(sql)
+        result = [i[0] for i in self.query(sql)]
+        return result
+
+    def get_connector_info_by_id(self, connector_id: int):
+        sql = f"""
+            SELECT conn.origin, conn.destiny, conn.cell, conn.offset_x, conn.offset_y, conn.id
+            FROM connections conn
+            WHERE conn.id = {connector_id}
+        """
+        result = self.query(sql)
+        return result[0]
 
     def get_map_info(self, world_map_id: int):
         sql = f"""
@@ -633,3 +660,4 @@ class Database:
 
 if __name__ == "__main__":
     database = Database()
+    print(database.get_connector_info_by_id(9465))
