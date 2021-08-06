@@ -23,7 +23,48 @@ i18n_en = unpacker.dofus_open("i18n_en.d2i")
 items = unpacker.dofus_open("Items.d2o")
 queue = Queue()
 finished_inserting = False
-
+zaaps = {
+    68552706: "Amakna Castle",
+    88213271: "Amakna Village",
+    185860609: "Crackler Mountain",
+    88212746: "Edge of the Evil Forest",
+    8808270: "Gobball Corner",
+    68419587: "Madrestam Harbour",
+    88212481: "Scaraleaf Plain",
+    197920772: "Crocuzko",
+    191105026: "Astrub City",
+    147768: "Bonta",
+    144419: "Brakmar",
+    156240386: "Cania Lake",
+    165152263: "Cania Massif",
+    14419207: "Imp Village",
+    126094107: "Kanig Village",
+    84806401: "Lousy Pig Plain",
+    147590153: "Rocky Plains",
+    164364304: "Rocky Roads",
+    142087694: "The Cania Fields",
+    202899464: "Arch of Vili",
+    100270593: "Dopple Village",
+    108789760: "Entrance to Harebourg's Castle",
+    54172969: "Frigost Village",
+    54173001: "The Snowbound Village",
+    73400320: "Breeder Village",
+    156762120: "Turtle Beach",
+    173278210: "Dunes of Bones",
+    20973313: "Canopy Village",
+    154642: "Coastal Village",
+    207619076: "Pandala Village",
+    171967506: "Caravan Alley",
+    179831296: "Desecrated Highlands",
+    115083777: "Alliance Temple",
+    95422468: "Sufokia",
+    88085249: "Sufokian Shoreline",
+    120062979: "The Cradle",
+    115737095: "Abandoned Labowatowies",
+    99615238: "Cawwot Island",
+    28050436: "Zoth Village",
+    154010371: "Way of Souls",
+}
 
 def consume_queue(queue: Queue):
     database = Database()
@@ -48,6 +89,8 @@ def consume_queue(queue: Queue):
             database.insert_connector(to_insert)
         elif data_type == "harvestables":
             database.insert_harvestables_cells(to_insert)
+        elif data_type == "zaap":
+            database.insert_zaaps(to_insert)
         if finished_inserting:
             print(f"Remaining itens: {queue.qsize()}              ", end="\r")
     return None
@@ -235,8 +278,6 @@ def insert_map_elements_and_harvestables(file_path):
     with open(file_path, "r") as json_file:
         map_data = json.load(json_file)
         map_id = int(map_data.get("mapId"))
-        if int(map_id) == 101715463:
-            print()
         layers = map_data.get("layers")
         for layer in layers:
             cells = layer.get("cells")
@@ -289,8 +330,8 @@ def insert_map_elements_and_harvestables(file_path):
                         if element_id in interactives.get("zaaps"):
                             queue.put(
                                 (
-                                    "interactives",
-                                    (map_id, "zaap", cell_id, offset_x, offset_y),
+                                    "zaap",
+                                    (zaaps.get(map_id), map_id, cell_id, offset_x, offset_y),
                                 )
                             )
                         if map_id in connections:
@@ -368,6 +409,6 @@ insert_connectors()
 finished_inserting = True
 thread_insert.join()
 print('Finishing...', end='\r')
-insert_zaaps()
+# insert_zaaps()
 create_harvestables_location_view()
 print("Finishing   OK")

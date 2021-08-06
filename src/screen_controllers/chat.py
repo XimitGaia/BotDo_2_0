@@ -57,6 +57,14 @@ class Chat:
         text = self.screen.get_chat_content(self.chat_position)
         return text
 
+    def erase_text(self):
+        keyboard.press("control")
+        time.sleep(0.1)
+        keyboard.press_and_release("a")
+        keyboard.release("control")
+        time.sleep(0.1)
+        keyboard.press_and_release("delete")
+
     def chat_io(self, string_array):
         self.maximize_chat()
         keyboard.press_and_release("space")

@@ -173,7 +173,7 @@ class Login:
             Login.kill_window(window_id)
             traceback.print_tb(e.__traceback__)
             raise RetryError("Fail to login")
-        time.sleep(5)
+        time.sleep(7)
         return window_id
 
 

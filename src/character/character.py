@@ -27,7 +27,7 @@ from src.character.moving import Moving
 from src.character.harvesting import Harvesting
 from src.errors.character_errors import CharacterCriticalError, RetryError, JobError
 
-debug = True
+debug = False
 
 
 class Character:
@@ -61,7 +61,7 @@ class Character:
         self.skills = dict()
         self.queue = list()
         self.load_metadata(account)
-        self.moving = Moving(self.screen, self.database, self.get_map_id)
+        self.moving = Moving(self.screen, self.database, self.get_map_id, self.get_my_zaaps)
         self.harvesting = Harvesting(self.screen, self.database, self.get_map_id)
         self.chat = Chat(screen=self.screen, character_name=self.name)
         self.chat_comands_map = self.get_chat_comands_map()
@@ -97,7 +97,7 @@ class Character:
     def has_map_change(self):
         if self.window_id == self.screen.get_foreground_screen_id():
             actual_active_screen = self.screen.get_active_screen_image()
-            if self.screen.image_ssim(self.location_controler["current_map_image"], actual_active_screen) < 0.35:
+            if self.screen.image_ssim(self.location_controler["current_map_image"], actual_active_screen) < 0.30:
                 return True
         return False
 
@@ -145,9 +145,9 @@ class Character:
 
     def add_init_functions_on_queue(self):
         self.queue.append(self.login_dofus)
-        self.queue.append(self.check_hp_map_id)
         if not debug:
             self.queue.append(self.get_zaaps)
+        self.queue.append(self.check_hp_map_id)
 
     def get_check_string(self, property_name: str):
         return self.chat_comands_map.get(property_name).get("string")
@@ -230,48 +230,34 @@ class Character:
         self.clean_queue()
         self.add_init_functions_on_queue()
 
-    def open_close_heavenbag(self):
-        keyboard.press_and_release("h")
-        time.sleep(4)
+    def check_and_update_zaap(self, zaap_data: tuple):
+        zaap_name = zaap_data[1]
+        zaap_map_id = zaap_data[2]
+        time.sleep(1)
+        keyboard.write(zaap_name)
+        if self.screen.has_zaap_marker():
+            self.my_zaaps.update({zaap_map_id: zaap_name})
+        self.chat.erase_text()
 
     def get_zaaps(self):
         zaaps = self.database.get_zaaps()
-        self.open_close_heavenbag()
-        bag_type = self.screen.get_my_bag_type()
-        if bag_type == "kerub":
-            xconst = 0.158004158004158
-            yconst = 0.45601173020527859
-        else:
-            yconst = 0.332844574780058651
-            xconst = 0.36382536382536382
-        xcoord = self.screen.game_active_screen[0] + xconst * (
-            self.screen.game_active_screen[2] - self.screen.game_active_screen[0]
-        )
-        ycoord = self.screen.game_active_screen[3] * yconst
-        pyautogui.click((xcoord, ycoord))
-        time.sleep(4)
+        self.moving.open_close_heavenbag()
+        self.moving.bag_map_id = self.get_map_id()
         try:
-            search_input_pos = self.screen.find_zaap_search_position()
+            self.moving.open_zaap_by_map_id(self.moving.bag_map_id)
+            time.sleep(2)
         except ScreenError as e:
             traceback.print_tb(e.__traceback__)
             raise CharacterCriticalError("You are not premium account!!! 💸")
-        pyautogui.click(search_input_pos)
         for zaap in zaaps:
-            zaap_name = zaap[0]
-            time.sleep(1)
-            keyboard.write(zaap_name)
-            if self.screen.has_zaap_marker():
-                self.my_zaaps.update({zaap[0]: (zaap[1], zaap[2])})
-            keyboard.press("control")
-            time.sleep(0.1)
-            keyboard.press_and_release("a")
-            keyboard.release("control")
-            time.sleep(0.1)
-            keyboard.press_and_release("delete")
+            self.check_and_update_zaap(zaap_data=zaap)
         time.sleep(0.1)
         keyboard.press_and_release("esc")
         time.sleep(0.5)
-        self.open_close_heavenbag()
+        self.moving.open_close_heavenbag()
+
+    def get_my_zaaps(self):
+        return self.my_zaaps
 
     def move(self):
         self.location_controler["current_map_image"] = self.screen.get_active_screen_image()

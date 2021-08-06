@@ -306,11 +306,11 @@ if __name__ == "__main__":
     # yoff = -27
     # xoff += -49
     # yoff += -177
-    pos = screen.map_to_screen(251)
+    pos = screen.map_to_screen(245)
     # w = ((205 * 0.75)//2)
     # h = ((253 * 0.75)//2)
     # print(screen.get_action_screen_y_step())
-    pos = (pos[0] + 72 * 0.75, pos[1])
+    pos = (pos[0]   , pos[1])
     # # # yoff = (yoff)// 2
     # # # xoff = (xoff)// 2
     # # print(pos)

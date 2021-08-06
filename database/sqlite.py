@@ -186,10 +186,12 @@ class Database:
                 "temp": False,
                 "sql": """
                     CREATE TABLE *table*(
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,
                         name TEXT UNIQUE,
                         world_map_id INTEGER,
-                        x INTEGER,
-                        y INTEGER,
+                        cell INTEGER,
+                        offset_x INTEGER,
+                        offset_y INTEGER,
                         FOREIGN KEY(world_map_id) REFERENCES world_map(id)
                     );
                 """,
@@ -277,7 +279,7 @@ class Database:
     def insert_zaaps(self, row: tuple):
         cursor = self.connection.cursor()
         cursor.execute(
-            """INSERT OR IGNORE INTO zaaps(name, world_map_id, x, y) values(?,?,?,?);""",
+            """INSERT OR IGNORE INTO zaaps(name, world_map_id, cell, offset_x, offset_y) values(?,?,?,?,?);""",
             row,
         )
         self.connection.commit()
@@ -624,9 +626,18 @@ class Database:
 
     def get_zaaps(self):
         sql = """
-            SELECT * FROM zaaps
+            SELECT * FROM zaaps zaap
+            WHERE zaap.name IS NOT NULL
         """
         return self.query(sql)
+
+    def get_zaap_info_by_map_id(self, map_id: int):
+        sql = f"""
+            SELECT * FROM zaaps zaap
+            WHERE zaap.world_map_id =  {map_id}
+        """
+        result = self.query(sql)
+        return result[0]
 
     def get_harvestables_cells_by_map_id(self, harvestables: list, map_id: int):
         harvestables = [str(i) for i in harvestables]
