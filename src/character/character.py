@@ -283,6 +283,16 @@ class Character:
         else:
             self.time_controler["seconds_to_wait"] = wait_time
 
+    def are_pods_high(self):
+        self.open_close_inventory()
+        answer = self.is_color_on_region(RGB=(255, 0, 255), region=self.screen.game_active_screen)
+        self.open_close_inventory()
+        return answer
+
+    def open_close_inventory(self):
+        keyboard.press_and_release("i")
+        time.sleep(1)
+
     # :::        ::::::::      :::     :::::::::   ::::::::
     # :+:       :+:    :+:   :+: :+:   :+:    :+: :+:    :+:
     # +:+       +:+    +:+  +:+   +:+  +:+    +:+ +:+

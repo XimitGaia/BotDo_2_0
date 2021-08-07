@@ -15,6 +15,7 @@ images = {
     "bg_light.png": (255, 255, 255, 255),
     "window_separator_black_horizontal.png": (0, 0, 0, 0),
     "pin_mark_red.png": (255, 0, 255, 255),
+    "pin_mark_yellow.png": (255, 0, 255, 255),
     "icon_bin_normal.png": (255, 0, 255, 255)
 }
 

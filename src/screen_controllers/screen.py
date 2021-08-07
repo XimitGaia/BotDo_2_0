@@ -159,96 +159,75 @@ class Screen:
     #    +#+    +#+ +#+     +#+ +#+         +#+     +#+        +#+                 +#+       +#+ +#+    +#+ +#+    +#+ +#+
     #   #+#    #+# #+#     #+# #+#         #+#     #+#        #+#                 #+#       #+# #+#    #+# #+#    #+# #+#
     #  #########  ###     ### ###         ###     ########## ##########          ###       ###  ########  #########  ##########
+    def get_comparation_group(self,point: tuple)->list: #point = (x,y)
+        comparation_group = []
+        for y in range(point[1]-1,point[1]+2):
+            for x in range(point[0]-1,point[0]+2):
+                comparation_group.append((x,y))
+        return comparation_group
 
-    # def get_fight_markers_regions(self)->dict:
-    #         return {
-    #             'res_region': self.get_marked_area_or_points(marker='res_marker',screen=self.bottom_region),
-    #             'name_region': self.get_marked_area_or_points(marker='name_marker',screen=self.bottom_region),
-    #             'hp_ap_mp_region': self.get_marked_area_or_points(marker='hp_ap_mp_marker',screen=self.bottom_region)
-    #         }
+    def get_battle_map_info(self):
+        battle_map_info = {
+            'cells': list(),
+            'walls': list(),
+            'holes': list(),
+            'start_positions': list(),
+            'team': None,
+        }
+        action_screen = ImageGrab.grab(self.game_active_screen)
+        action_screen = np.array(action_screen)
+        cell_number = 0
+        x_range_color = self.x_range_black # start difference between withe losangle and black losangle
+        for y in self.y_range:
+            for x in x_range_color:
+                comparation_group = self.get_comparation_group((round(x),round(y)))
+                pixels = []
+                for xcoord,ycoord in comparation_group:
+                    pixels.append(list(action_screen[ycoord][xcoord]))
+                #define the group of the cell
+                if pixels[1:] == pixels[:-1]:# if all pixels are equal
+                    if pixels[0] == [142, 134, 94] or pixels[0] == [150, 142, 103]:
+                        battle_map_info["cells"].append(cell_number)
+                    elif pixels[0] == [0, 0, 0]:
+                        battle_map_info["holes"].append(cell_number)
+                    elif pixels[0] == [88, 83, 58]:
+                        battle_map_info["walls"].append(cell_number)
+                    elif pixels[0] == [221, 34, 0]:
+                        battle_map_info["cells"].append(cell_number)
+                        team = 'red'
+                        battle_map_info["start_positions"].append(cell_number)
+                    elif pixels[0] == [0, 34, 221]:
+                        battle_map_info["cells"].append(cell_number)
+                        team = 'blue'
+                        battle_map_info["start_positions"].append(cell_number)
+                    else:# enemy start positions
+                        battle_map_info["cells"].append(cell_number)
+                else:
+                    battle_map_info["cells"].append(cell_number)
+                cell_number += 1
+            if x_range_color == self.x_range_black:
+                x_range_color = self.x_range_white
+            else:
+                x_range_color = self.x_range_black
+        return battle_map_info
 
-    # def text_res_table_on_screen(self,table_region:tuple)->str:
-    #     region_image = ImageGrab.grab(table_region)
-    #     return pytesseract.image_to_string(region_image,config='--psm 4 -c tessedit_char_whitelist=-%0123456789')
+    # xxx = {
+    #     "[142, 134, 94]": "cells",
+    #     "[150, 142, 103]": "cells",
+    #     "[0, 0, 0]": "holes",
+    #     "[88, 83, 58]": "walls",
+    #     "[221, 34, 0]": ,
+    #     "[0, 34, 221]": ,
+    # }
 
-    # def text_hp_ap_mp_list_on_screen(self,region:tuple)->str:
-    #     region_image = ImageGrab.grab(region)
-    #     return pytesseract.image_to_string(region_image,config='--psm 6 -c tessedit_char_whitelist=-/0123456789')
-
-    # def get_timeline_region(self):
-    #     return (self.game_active_screen[2],0,self.screen_size[0],self.screen_size[1])
-
-    # def get_comparation_group(self,point: tuple)->list: #point = (x,y)
-    #     comparation_group = []
-    #     for y in range(point[1]-1,point[1]+2):
-    #         for x in range(point[0]-1,point[0]+2):
-    #             comparation_group.append((x,y))
-    #     return comparation_group
-
-    # def get_battle_map_info(self):
-    #     #variables to return
-    #     team = None
-    #     cells = []
-    #     walls = []
-    #     holes = []
-    #     start_positions = []
-    #     timeline_region = self.get_timeline_region()
-    #     #end of variables
-    #     #define step and get the screen image to compare
-    #     action_screen = ImageGrab.grab(self.game_active_screen)
-    #     action_screen = np.array(action_screen)
-    #     position_number = 0 # number of the cell
-    #     x_range_color = self.x_range_black # start difference between withe losangle and black losangle
-    #     for y in self.y_range:
-    #         for x in x_range_color:
-    #             comparation_group = self.get_comparation_group((round(x),round(y)))
-    #             pixels = []
-    #             for xcoord,ycoord in comparation_group:
-    #                 pixels.append(list(action_screen[ycoord][xcoord]))
-    #             #define the group of the cell
-    #             if pixels[1:] == pixels[:-1]:# if all pixels are equal
-    #                 if pixels[0] == [142, 134, 94] or pixels[0] == [150, 142, 103]:
-    #                     cells.append(position_number)
-    #                 elif pixels[0] == [0, 0, 0]:
-    #                     holes.append(position_number)
-    #                 elif pixels[0] == [88, 83, 58]:
-    #                     walls.append(position_number)
-    #                 elif pixels[0] == [221, 34, 0]:
-    #                     cells.append(position_number)
-    #                     team = 'red'
-    #                     start_positions.append(position_number)
-    #                 elif pixels[0] == [0, 34, 221]:
-    #                     cells.append(position_number)
-    #                     team = 'blue'
-    #                     start_positions.append(position_number)
-    #                 else:# enemy start positions
-    #                     cells.append(position_number)
-    #             else:
-    #                 cells.append(position_number)
-    #         #change the index of the position and the translation of the row
-    #             position_number += 1
-    #         if x_range_color == self.x_range_black:
-    #             x_range_color = self.x_range_white
-    #         else:
-    #             x_range_color = self.x_range_black
-
-    #     return {
-    #         'cells': cells,
-    #         'walls': walls,
-    #         'holes': holes,
-    #         'start_positions': start_positions,
-    #         'team': team,
-    #         'timeline_region': timeline_region
-    #     }
-
-    # def get_occupied_cells(self):
-    #     screen = ImageGrab.grab('')
-    #     occupied_cells = []
-    #     for cell in self.cells:
-    #         point = self.map_to_screen(cell)
-    #         if screen.getpixel(point) != (142, 134, 94) and screen.getpixel(point) != (150, 142, 103):
-    #             occupied_cells.append(cell)
-    #     return occupied_cells
+    def get_occupied_cells(self):
+        screen = ImageGrab.grab('')
+        occupied_cells = []
+        for cell in self.cells:
+            point = self.map_to_screen(cell)
+            if screen.getpixel(point) != (142, 134, 94) and screen.getpixel(point) != (150, 142, 103):
+                occupied_cells.append(cell)
+        return occupied_cells
 
     #        :::::::: ::::::::::: :::    ::: :::::::::: :::::::::   ::::::::
     #      :+:    :+:    :+:     :+:    :+: :+:        :+:    :+: :+:    :+:
@@ -276,12 +255,7 @@ class Screen:
         return (xcoord, ycoord)
 
     def has_zaap_marker(self):
-        result = self.search.search_color(
-            RGB=(255, 0, 255), region=(self.game_active_screen)
-        )
-        if result != []:
-            return True
-        return False
+        return self.is_color_on_region(RGB=(255, 0, 255), region=(self.game_active_screen))
 
     @staticmethod
     def bring_character_to_front(character_window_number: int):
@@ -294,26 +268,21 @@ class Screen:
         text = pytesseract.image_to_string(chat_image, config=ocr_config)
         return text
 
+    def is_color_on_region(self, RGB: tuple, region:tuple):
+        result = self.search.search_color(
+            RGB=RGB, region=region
+        )
+        if result != []:
+            return True
+        return False
+
 
 if __name__ == "__main__":
     screen = Screen()
     time.sleep(1)
-    s = time.time()
-    # print(screen.get_pos_ocr())
-    # print(time.time() - s)
-    # import pyautogui
-    # xoff =  47
-    # yoff = -27
-    # xoff += -49
-    # yoff += -177
-    pos = screen.map_to_screen(245)
-    # w = ((205 * 0.75)//2)
-    # h = ((253 * 0.75)//2)
-    # print(screen.get_action_screen_y_step())
-    pos = (pos[0]   , pos[1])
-    # # # yoff = (yoff)// 2
-    # # # xoff = (xoff)// 2
-    # # print(pos)
-    # # altitude = 0
-    # # pyautogui.moveTo((pos[0] + w + xoff*screen.game_scale, pos[1] + h + yoff*screen.game_scale))
-    pyautogui.moveTo(pos)
+    a = screen.get_battle_map_info()
+    print(a.keys())
+    for i in a['holes']:
+        pyautogui.moveTo(screen.map_to_screen(i))
+        time.sleep(0.01)
+
