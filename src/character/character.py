@@ -260,11 +260,12 @@ class Character:
         return self.my_zaaps
 
     def move(self):
+        time.sleep(1)
         self.location_controler["current_map_image"] = self.screen.get_active_screen_image()
         has_more_movements = self.moving.execute_movement()
         if has_more_movements:
             self.queue.append(self.move)
-        self.set_wait_time(8)
+        self.set_wait_time(7)
         self.time_controler["locked_timer"] = False
         self.time_controler["started_at"] = time.time()
 

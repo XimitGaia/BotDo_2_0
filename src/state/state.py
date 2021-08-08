@@ -39,7 +39,7 @@ class State:
     def get(self, key):
         return self.state[key]
 
-    def resolve_queue(self):
+     def resolve_queue(self):
         self.set_thread_status("resolve_queue_thread", "runnning")
         while True:
             self.check_pause_command(thread_name="resolve_queue_thread")

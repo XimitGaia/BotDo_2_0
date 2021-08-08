@@ -24,7 +24,6 @@ class Battle:
         self.database = database
         self.battle_map_info = None
         self.monster_name_regex = re.compile(r"([a-zA-Z_\ ]+) L?v?I?l?O?m?")
-        self.omega_level_regex = re.compile(r"Om.?")
         self.monster_level_regex = re.compile(r"L?v?I?l?.? ?(\d+)")
 
     def get_group_of_pixels_to_compare(self, point: tuple) -> list: #point = (x,y)
@@ -119,6 +118,7 @@ class Battle:
             "initiative": sum([data[20], data[21], data[22], data[23]]),
             "spells": {},
             "buffs": {},
+            "actual_cell": None,
             "name": data[2],
             "level": data[4],
             "hp": data[5],
@@ -146,6 +146,8 @@ class Battle:
             }
         }
         return to_return
+
+
 
 if __name__ == "__main__":
     database = Database()

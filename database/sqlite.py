@@ -594,10 +594,11 @@ class Database:
         result = [i[0] for i in self.query(sql)]
         return result
 
-    def get_next_connectors_by_connector_id(self, connection_id):
+    def get_next_connectors_by_connector_ids(self, connection_ids: list):
+        string_list = ",".join([str(i) for i in connection_ids])
         sql = f"""
             SELECT conn.id from connections conn
-            WHERE conn.origin = (SELECT destiny FROM connections WHERE id = {connection_id})
+            WHERE conn.origin IN (SELECT destiny FROM connections WHERE id IN ({string_list}))
         """
         result = [i[0] for i in self.query(sql)]
         return result

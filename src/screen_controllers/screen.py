@@ -94,10 +94,10 @@ class Screen:
 
     def get_fight_buttom_region(self):
         self.fight_buttom_region = (
-            0.75419 * (self.game_active_screen_width) + self.game_active_screen[0],
-            self.game_active_screen[3],
-            self.game_active_screen[2],
-            self.screen_size[1],
+            1264 * self.game_scale,
+            912 * self.game_scale,
+            1421.333 * self.game_scale,
+            985.333 * self.game_scale,
         )
 
     def map_to_screen(self, cell_number: int):

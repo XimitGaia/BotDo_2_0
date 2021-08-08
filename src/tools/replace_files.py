@@ -18,7 +18,10 @@ images = {
     "pin_mark_yellow.png": (255, 0, 255, 255),
     "icon_bin_normal.png": (255, 0, 255, 255),
     "icon_hud_creature_mode.png": (0, 255, 255, 255),
-    "background_info_enemy.png": (255, 255, 255, 255)
+    "background_info_enemy.png": (255, 255, 255, 255),
+    "btn_greenSecondLargeBorder_normal.png": (76, 0, 61, 255),
+    "btn_greenSecondLargeBorder_over.png": (76, 0, 61, 255),
+    "btn_greenSecondLargeBorder_disabled.png": (76, 0, 61, 255)
 }
 
 xml_elements = {"chat.bgColor": "0xFFFFFF"}

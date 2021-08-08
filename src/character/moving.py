@@ -80,10 +80,10 @@ class Moving:
         path_connections_index = 0
         while True:
             layer = list()
-            for connection_id in path_connections[path_connections_index]:
-                next_connections = [i for i in self.get_next_connectors(connection_id) if i not in processed_connections]
-                processed_connections.extend(next_connections)
-                layer.extend(next_connections)
+            connection_ids = path_connections[path_connections_index]
+            next_connections = self.get_next_connectors(connection_ids, processed_connections)
+            processed_connections.extend(next_connections)
+            layer.extend(next_connections)
             destiny_connections = list(set(last_connections) & set(layer))
             if self.unassembled_shortest_path:
                 return "sucess"
@@ -96,13 +96,14 @@ class Moving:
             elif len(layer) > 0:
                 path_connections.append(layer)
             else:
+                self.number_of_tasks -= 1
                 return "error"
             await asyncio.sleep(0)
             path_connections_index += 1
 
-    def get_next_connectors(self, connection_id: int):
+    def get_next_connectors(self, connection_ids: list, processed_connections: list):
         connections = [
-            i for i in self.database.get_next_connectors_by_connector_id(connection_id) if i not in self.connection_error
+            i for i in self.database.get_next_connectors_by_connector_ids(connection_ids) if i not in self.connection_error and i not in processed_connections
         ]
         return connections
 
@@ -161,25 +162,73 @@ class Moving:
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
         asyncio.ensure_future(self.djikstra(start=start, destiny=destiny, start_type="current_pos"))
+        self.number_of_tasks = 1
         for zaap in zaaps.keys():
             asyncio.ensure_future(self.djikstra(start=zaap, destiny=destiny, start_type="zaap"))
+            self.number_of_tasks += 1
         loop.run_until_complete(self.wait_unassembled_shortest_path())
+        if not self.unassembled_shortest_path:
+            return "error"
         return self.djikstra_path_assembler(djikstra_list=self.unassembled_shortest_path)
 
     async def wait_unassembled_shortest_path(self):
-        while self.unassembled_shortest_path is None:
+        while self.unassembled_shortest_path is None and self.number_of_tasks != 0:
             await asyncio.sleep(0)
         await asyncio.sleep(0)
 
 
 if __name__ == "__main__":
 
-    def a():
-        print("i")
+    def map_id():
+        return 101715479
+
+    def zaaps():
+        return {
+    68552706: "Amakna Castle",
+    88213271: "Amakna Village",
+    185860609: "Crackler Mountain",
+    88212746: "Edge of the Evil Forest",
+    8808270: "Gobball Corner",
+    68419587: "Madrestam Harbour",
+    88212481: "Scaraleaf Plain",
+    197920772: "Crocuzko",
+    191105026: "Astrub City",
+    147768: "Bonta",
+    144419: "Brakmar",
+    156240386: "Cania Lake",
+    165152263: "Cania Massif",
+    14419207: "Imp Village",
+    126094107: "Kanig Village",
+    84806401: "Lousy Pig Plain",
+    147590153: "Rocky Plains",
+    164364304: "Rocky Roads",
+    142087694: "The Cania Fields",
+    202899464: "Arch of Vili",
+    100270593: "Dopple Village",
+    108789760: "Entrance to Harebourg's Castle",
+    54172969: "Frigost Village",
+    54173001: "The Snowbound Village",
+    73400320: "Breeder Village",
+    156762120: "Turtle Beach",
+    173278210: "Dunes of Bones",
+    20973313: "Canopy Village",
+    154642: "Coastal Village",
+    207619076: "Pandala Village",
+    171967506: "Caravan Alley",
+    179831296: "Desecrated Highlands",
+    115083777: "Alliance Temple",
+    95422468: "Sufokia",
+    88085249: "Sufokian Shoreline",
+    120062979: "The Cradle",
+    115737095: "Abandoned Labowatowies",
+    99615238: "Cawwot Island",
+    28050436: "Zoth Village",
+    154010371: "Way of Souls",
+}
 
     s = Screen()
     d = Database()
-    m = Moving(s, d, a)
+    m = Moving(s, d, get_map_id=map_id, get_my_zaaps=zaaps)
     # f = m.get_path(191105026, 191106048)
-    f = m.get_path(101715479, 68551174)
+    f = m.get_path(54172969, 180356611)
     print(f)
