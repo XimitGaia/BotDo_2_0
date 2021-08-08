@@ -233,5 +233,5 @@ if __name__ == "__main__":
     # a.d2p_dump(r"C:\Users\Lucas\AppData\Local\Ankama\zaap\dofus\content\maps\maps0.d2p",r"C:\Users\Lucas\Desktop\Dofus Decompiler\PyDofus-master\output")
     # a.dlm_dump(r"C:\Users\Lucas\Desktop\Dofus Decompiler\PyDofus-master\input\188746758.dlm",r"C:\Users\Lucas\Desktop\Dofus Decompiler\PyDofus-master\input")
     # a.bin_dump(r"D:\Ankama\Dofus\content\maps\worldgraph.bin", "C:\\Users\\Lucas\\Desktop")
-    a.dofus_dump("elements.ele")
+    a.dofus_dump("Monsters.d2o")
     print(output_base_path)

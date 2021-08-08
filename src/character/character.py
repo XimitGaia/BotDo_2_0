@@ -29,7 +29,7 @@ from src.errors.character_errors import CharacterCriticalError, RetryError, JobE
 
 debug = False
 
-
+# Module_Ankama_GameUiCore.dat limpar por que tem informação do chat
 class Character:
     def __init__(self, state: State, screen: Screen, account: dict, database: Database):
         self.shared_state = state

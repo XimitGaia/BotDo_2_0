@@ -108,7 +108,11 @@ class Database:
                         can_be_pushed INTEGER,
                         can_switch_pos INTEGER,
                         can_switch_pos_on_target INTEGER,
-                        can_be_carried INTEGER
+                        can_be_carried INTEGER,
+                        strength INTEGER,
+                        intelligence INTEGER,
+                        chance INTEGER,
+                        agility INTEGER                        
                     );
                 """,
                 "with_index": False,
@@ -262,7 +266,7 @@ class Database:
     def insert_monsters(self, row: tuple):
         cursor = self.connection.cursor()
         cursor.execute(
-            """INSERT OR IGNORE INTO monsters(monster_id, monster_name, monster_type, level, life_points, action_points, movement_points, pa_dodge, pm_dodge, earth_resistance, air_resistance, fire_resistance , water_resistance, neutral_resistance, can_trackle, can_be_pushed, can_switch_pos, can_switch_pos_on_target, can_be_carried) values(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?);""",
+            """INSERT OR IGNORE INTO monsters(monster_id, monster_name, monster_type, level, life_points, action_points, movement_points, pa_dodge, pm_dodge, earth_resistance, air_resistance, fire_resistance , water_resistance, neutral_resistance, can_trackle, can_be_pushed, can_switch_pos, can_switch_pos_on_target, can_be_carried, strength, intelligence, chance, agility) values(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?);""",
             row,
         )
         self.connection.commit()
@@ -647,6 +651,15 @@ class Database:
             hc.harvestable_id in ({', '.join(harvestables)})
         """
         return self.query(sql)
+
+    def get_monster_info_by_name_and_level(self, name: str, level: int):
+        sql = f"""
+            SELECT * FROM monsters mon
+            WHERE mon.monster_name = "{name}" 
+            AND mon.level = {level}
+        """
+        result = self.query(sql)
+        return result[0]
 
     # :::     ::: ::::::::::: :::::::::: :::       :::
     # :+:     :+:     :+:     :+:        :+:       :+:

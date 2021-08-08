@@ -176,6 +176,10 @@ def monsters_and_drops_inserter():
             monster_fire_res = grade.get("fireResistance")
             monster_water_res = grade.get("waterResistance")
             monster_neutral_res = grade.get("neutralResistance")
+            monster_strength = grade.get("strength")
+            monster_intelligence = grade.get("intelligence")
+            monster_chance = grade.get("chance")
+            monster_agility = grade.get("agility")
             monster_data = (
                 monster_id,
                 monster_name,
@@ -196,6 +200,10 @@ def monsters_and_drops_inserter():
                 can_switch_pos,
                 can_switch_pos_on_target,
                 can_be_carried,
+                monster_strength,
+                monster_intelligence,
+                monster_chance,
+                monster_agility
             )
             queue.put(("monster", monster_data))
         drop_handler(monster.get("drops"))

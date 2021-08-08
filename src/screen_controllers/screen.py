@@ -149,85 +149,7 @@ class Screen:
         img2 = np.array(img2)
         gray1 = cv2.cvtColor(img1, cv2.COLOR_BGR2GRAY)
         gray2 = cv2.cvtColor(img2, cv2.COLOR_BGR2GRAY)
-        return structural_similarity(gray1,gray2)
-
-
-    #        :::::::::      ::: ::::::::::: ::::::::::: :::        ::::::::::            :::   :::    ::::::::  :::::::::  ::::::::::
-    #       :+:    :+:   :+: :+:   :+:         :+:     :+:        :+:                  :+:+: :+:+:  :+:    :+: :+:    :+: :+:
-    #      +:+    +:+  +:+   +:+  +:+         +:+     +:+        +:+                 +:+ +:+:+ +:+ +:+    +:+ +:+    +:+ +:+
-    #     +#++:++#+  +#++:++#++: +#+         +#+     +#+        +#++:++#            +#+  +:+  +#+ +#+    +:+ +#+    +:+ +#++:++#
-    #    +#+    +#+ +#+     +#+ +#+         +#+     +#+        +#+                 +#+       +#+ +#+    +#+ +#+    +#+ +#+
-    #   #+#    #+# #+#     #+# #+#         #+#     #+#        #+#                 #+#       #+# #+#    #+# #+#    #+# #+#
-    #  #########  ###     ### ###         ###     ########## ##########          ###       ###  ########  #########  ##########
-    def get_comparation_group(self,point: tuple)->list: #point = (x,y)
-        comparation_group = []
-        for y in range(point[1]-1,point[1]+2):
-            for x in range(point[0]-1,point[0]+2):
-                comparation_group.append((x,y))
-        return comparation_group
-
-    def get_battle_map_info(self):
-        battle_map_info = {
-            'cells': list(),
-            'walls': list(),
-            'holes': list(),
-            'start_positions': list(),
-            'team': None,
-        }
-        action_screen = ImageGrab.grab(self.game_active_screen)
-        action_screen = np.array(action_screen)
-        cell_number = 0
-        x_range_color = self.x_range_black # start difference between withe losangle and black losangle
-        for y in self.y_range:
-            for x in x_range_color:
-                comparation_group = self.get_comparation_group((round(x),round(y)))
-                pixels = []
-                for xcoord,ycoord in comparation_group:
-                    pixels.append(list(action_screen[ycoord][xcoord]))
-                #define the group of the cell
-                if pixels[1:] == pixels[:-1]:# if all pixels are equal
-                    if pixels[0] == [142, 134, 94] or pixels[0] == [150, 142, 103]:
-                        battle_map_info["cells"].append(cell_number)
-                    elif pixels[0] == [0, 0, 0]:
-                        battle_map_info["holes"].append(cell_number)
-                    elif pixels[0] == [88, 83, 58]:
-                        battle_map_info["walls"].append(cell_number)
-                    elif pixels[0] == [221, 34, 0]:
-                        battle_map_info["cells"].append(cell_number)
-                        team = 'red'
-                        battle_map_info["start_positions"].append(cell_number)
-                    elif pixels[0] == [0, 34, 221]:
-                        battle_map_info["cells"].append(cell_number)
-                        team = 'blue'
-                        battle_map_info["start_positions"].append(cell_number)
-                    else:# enemy start positions
-                        battle_map_info["cells"].append(cell_number)
-                else:
-                    battle_map_info["cells"].append(cell_number)
-                cell_number += 1
-            if x_range_color == self.x_range_black:
-                x_range_color = self.x_range_white
-            else:
-                x_range_color = self.x_range_black
-        return battle_map_info
-
-    # xxx = {
-    #     "[142, 134, 94]": "cells",
-    #     "[150, 142, 103]": "cells",
-    #     "[0, 0, 0]": "holes",
-    #     "[88, 83, 58]": "walls",
-    #     "[221, 34, 0]": ,
-    #     "[0, 34, 221]": ,
-    # }
-
-    def get_occupied_cells(self):
-        screen = ImageGrab.grab('')
-        occupied_cells = []
-        for cell in self.cells:
-            point = self.map_to_screen(cell)
-            if screen.getpixel(point) != (142, 134, 94) and screen.getpixel(point) != (150, 142, 103):
-                occupied_cells.append(cell)
-        return occupied_cells
+        return structural_similarity(gray1, gray2)
 
     #        :::::::: ::::::::::: :::    ::: :::::::::: :::::::::   ::::::::
     #      :+:    :+:    :+:     :+:    :+: :+:        :+:    :+: :+:    :+:
@@ -276,6 +198,11 @@ class Screen:
             return True
         return False
 
+    def get_line_text_on_region(self, region: tuple):
+        img = ImageGrab.grab(region)
+        config = "--psm 7 --oem 3"
+        text = pytesseract.image_to_string(img, config=config)
+        return text
 
 if __name__ == "__main__":
     screen = Screen()
