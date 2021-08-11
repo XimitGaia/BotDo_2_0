@@ -36,7 +36,7 @@ class Moving:
         offset_y *= self.screen.game_scale
         point_centered = self.screen.map_to_screen(cell)
         point = (point_centered[0] + offset_x + offsets[0], point_centered[1] + offset_y + offsets[1])
-        pyautogui.moveTo(point)
+        pyautogui.moveTo(point, duration=0.2)
         keyboard.press("shift")
         time.sleep(0.3)
         # checar se tem monstro
@@ -77,6 +77,11 @@ class Moving:
         processed_connections = [i for i in self.database.get_connectors_by_origin_map_id(start) if i not in self.connection_error]
         path_connections = [processed_connections.copy()]
         last_connections = self.database.get_connectors_by_destiny_map_id(destiny)
+        if set(path_connections[0]) & set(last_connections):
+            self.unassembled_shortest_path = path_connections
+            if start_type == "zaap":
+                self.is_teleport_needed = True
+            return "sucess"
         path_connections_index = 0
         while True:
             layer = list()

@@ -27,7 +27,7 @@ class Orchestrator:
     def format_accounts(self, account_and_goals: List[AccountAndGoal]) -> dict:
         to_return = dict()
         for account_and_goal in account_and_goals:
-            to_return[account_and_goal.getName()] = account_and_goal
+            to_return[account_and_goal.get_name()] = account_and_goal
         return to_return
 
     def get_accounts_name(self):

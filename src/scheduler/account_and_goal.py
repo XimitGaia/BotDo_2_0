@@ -7,7 +7,7 @@ class AccountAndGoal:
         self.character = character
         self.goal = goal
 
-    def getName(self):
+    def get_name(self):
         return self.character.name
 
     def run_function(self):
@@ -18,7 +18,7 @@ class AccountAndGoal:
             self.character.run_function()
 
     def next_goal_step(self):
-        character_name = self.getName()
+        character_name = self.get_name()
         next_step = self.goal.get_next_step(character_name=character_name)
         for sub_steps in next_step:
             sub_steps.run(character=self.character)
