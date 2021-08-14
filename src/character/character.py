@@ -373,3 +373,4 @@ class Character:
                 self.secundary_status[
                     dict_secundary_status.get(item)
                 ] = secundary_status.get(item)
+

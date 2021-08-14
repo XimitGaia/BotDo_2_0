@@ -115,7 +115,6 @@ class Battle:
         data = self.database.get_monster_info_by_name_and_level(name=name, level=level)
         to_return = {
             "battle_status": "alive",
-            "initiative": sum([data[20], data[21], data[22], data[23]]),
             "spells": {},
             "buffs": {},
             "actual_cell": None,
